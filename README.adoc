@@ -5,7 +5,7 @@ Material Design for Android Developers course.
 
 The initial code is based on a starter code: https://github.com/udacity/xyz-reader-starter-code.
 
-The XYZ Reader applicaiton is a mock RSS feed reader featuring
+The XYZ Reader application is a mock RSS feed reader featuring
 banner photos and headlines.
 
 The main goals of this project are:
