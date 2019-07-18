@@ -50,6 +50,8 @@ public class ArticleDetailActivity extends AppCompatActivity
         }
         setContentView(R.layout.activity_article_detail);
 
+        ActionBarHelper.initActionBar(getSupportActionBar());
+
         // TODO: replace with a ViewModel
         getSupportLoaderManager().initLoader(0, null, this);
 

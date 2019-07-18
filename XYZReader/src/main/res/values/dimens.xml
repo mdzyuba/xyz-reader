@@ -9,4 +9,9 @@
     <dimen name="fab_margin">24dp</dimen>
 
     <dimen name="list_padding">8dp</dimen>
+    <dimen name="list_item_padding">16dp</dimen>
+    <dimen name="list_item_image_margin">16dp</dimen>
+    <dimen name="thumbnail_height">104dp</dimen>
+
+    <dimen name="card_margin">8dp</dimen>
 </resources>
