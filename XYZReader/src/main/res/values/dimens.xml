@@ -14,4 +14,6 @@
     <dimen name="thumbnail_height">104dp</dimen>
 
     <dimen name="card_margin">8dp</dimen>
+    <dimen name="fab_width">56dp</dimen>
+    <dimen name="fab_height">56dp</dimen>
 </resources>
