@@ -6,14 +6,14 @@ import android.support.v4.util.LruCache;
 
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.ImageLoader;
-import com.android.volley.toolbox.Volley;
+import com.example.xyzreader.XyzReaderApp;
 
 public class ImageLoaderHelper {
     private static ImageLoaderHelper sInstance;
 
     public static ImageLoaderHelper getInstance(Context context) {
         if (sInstance == null) {
-            sInstance = new ImageLoaderHelper(context.getApplicationContext());
+            sInstance = new ImageLoaderHelper();
         }
 
         return sInstance;
@@ -22,8 +22,8 @@ public class ImageLoaderHelper {
     private final LruCache<String, Bitmap> mImageCache = new LruCache<String, Bitmap>(20);
     private ImageLoader mImageLoader;
 
-    private ImageLoaderHelper(Context applicationContext) {
-        RequestQueue queue = Volley.newRequestQueue(applicationContext);
+    private ImageLoaderHelper() {
+        RequestQueue queue = XyzReaderApp.getInstance().getRequestQueue();
         ImageLoader.ImageCache imageCache = new ImageLoader.ImageCache() {
             @Override
             public void putBitmap(String key, Bitmap value) {
