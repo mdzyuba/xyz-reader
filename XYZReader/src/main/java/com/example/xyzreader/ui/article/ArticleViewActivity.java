@@ -9,8 +9,10 @@ import android.support.design.widget.Snackbar;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.Spanned;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import com.example.xyzreader.R;
 import com.example.xyzreader.data.ItemsContract;
@@ -71,10 +73,20 @@ public class ArticleViewActivity extends AppCompatActivity {
             @Override
             public void onChanged(@Nullable Article article) {
                 Timber.d("Article is ready");
-                loadToolbarImage(article.getPhotoUrl());
+                initArticlePage(article);
             }
         });
         viewModel.loadArticle(startId);
+    }
+
+    private void initArticlePage(@Nullable Article article) {
+        loadToolbarImage(article.getPhotoUrl());
+        TextView title = findViewById(R.id.article_title);
+        title.setText(article.getTitle());
+        TextView bylineView = findViewById(R.id.article_byline);
+        Spanned text = new ArticleUI().formatDateAndAuthor(article.getAuthor(),
+                                                           article.getPublishedDate());
+        bylineView.setText(text);
     }
 
     void loadToolbarImage(String imageUrl) {
@@ -85,4 +97,5 @@ public class ArticleViewActivity extends AppCompatActivity {
                .centerCrop()
                .into(imageView);
     }
+
 }
