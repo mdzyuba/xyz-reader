@@ -2,6 +2,8 @@ package com.example.xyzreader.remote;
 
 import android.util.Log;
 
+import com.example.xyzreader.XyzReaderApp;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONTokener;
@@ -44,7 +46,7 @@ public class RemoteEndpointUtil {
     }
 
     static String fetchPlainText(URL url) throws IOException {
-        OkHttpClient client = new OkHttpClient();
+        OkHttpClient client = XyzReaderApp.getInstance().getOkHttpClient();
 
         Request request = new Request.Builder()
                 .url(url)

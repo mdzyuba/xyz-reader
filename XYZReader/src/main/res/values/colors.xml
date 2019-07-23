@@ -26,4 +26,5 @@
     <color name="article_detail_text_background">#fff</color>
     <color name="article_title_bar_background">@color/theme_primary_dark</color>
     <color name="action_title_bar_textColor">#fff</color>
+    <color name="image_placeholder">#fff</color>
 </resources>
