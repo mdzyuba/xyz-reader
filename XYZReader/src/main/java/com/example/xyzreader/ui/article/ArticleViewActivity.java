@@ -2,12 +2,14 @@ package com.example.xyzreader.ui.article;
 
 import android.arch.lifecycle.Observer;
 import android.arch.lifecycle.ViewModelProviders;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.ShareCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.graphics.Palette;
@@ -25,6 +27,8 @@ import com.example.xyzreader.model.Article;
 import com.example.xyzreader.ui.ActionBarHelper;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
+
+import org.jetbrains.annotations.NotNull;
 
 import timber.log.Timber;
 
@@ -67,13 +71,17 @@ public class ArticleViewActivity extends AppCompatActivity {
 
     private void initShareButton() {
         FloatingActionButton fab = findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
+        View.OnClickListener shareButtonOnClickListener = new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+                startActivity(Intent.createChooser(
+                        ShareCompat.IntentBuilder.from(ArticleViewActivity.this)
+                                                 .setType("text/plain")
+                                                 .setText("Some sample text").getIntent(),
+                        getString(R.string.action_share)));
             }
-        });
+        };
+        fab.setOnClickListener(shareButtonOnClickListener);
     }
 
     private void initViewModel() {
@@ -140,5 +148,7 @@ public class ArticleViewActivity extends AppCompatActivity {
             }
         });
     }
+
+
 
 }
