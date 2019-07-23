@@ -8,7 +8,7 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.app.ShareCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -28,12 +28,11 @@ import com.example.xyzreader.ui.ActionBarHelper;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
 
-import org.jetbrains.annotations.NotNull;
-
 import timber.log.Timber;
 
 public class ArticleViewActivity extends AppCompatActivity {
 
+    public static final String START_ID = "startId";
     private long startId;
 
     private ArticleViewModel viewModel;
@@ -58,7 +57,13 @@ public class ArticleViewActivity extends AppCompatActivity {
             }
         }
 
-        initViewModel();
+        ArticleViewFragment fragment = new ArticleViewFragment();
+        Bundle extras = new Bundle();
+        extras.putLong(START_ID, startId);
+        fragment.setArguments(extras);
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        fragmentManager.beginTransaction().replace(R.id.fragment_holder, fragment, "foo").commit();
+//        initViewModel();
     }
 
     private void initActionBar() {
@@ -90,24 +95,24 @@ public class ArticleViewActivity extends AppCompatActivity {
             @Override
             public void onChanged(@Nullable Article article) {
                 Timber.d("Article is ready");
-                initArticlePage(article);
+//                initArticlePage(article);
             }
         });
         viewModel.loadArticle(startId);
     }
 
-    private void initArticlePage(@Nullable Article article) {
-        TextView title = findViewById(R.id.article_title);
-        title.setText(article.getTitle());
-        TextView bylineView = findViewById(R.id.article_byline);
-        titleBarContainer = findViewById(R.id.meta_bar);
-
-        loadToolbarImage(article.getPhotoUrl());
-
-        Spanned text = new ArticleUI().formatDateAndAuthor(article.getAuthor(),
-                                                           article.getPublishedDate());
-        bylineView.setText(text);
-    }
+//    private void initArticlePage(@Nullable Article article) {
+//        TextView title = findViewById(R.id.article_title);
+//        title.setText(article.getTitle());
+//        TextView bylineView = findViewById(R.id.article_byline);
+//        titleBarContainer = findViewById(R.id.meta_bar);
+//
+//        loadToolbarImage(article.getPhotoUrl());
+//
+//        Spanned text = new ArticleUI().formatDateAndAuthor(article.getAuthor(),
+//                                                           article.getPublishedDate());
+//        bylineView.setText(text);
+//    }
 
     void loadToolbarImage(String imageUrl) {
         ImageView imageView = findViewById(R.id.toolbar_image);
@@ -148,7 +153,5 @@ public class ArticleViewActivity extends AppCompatActivity {
             }
         });
     }
-
-
 
 }
