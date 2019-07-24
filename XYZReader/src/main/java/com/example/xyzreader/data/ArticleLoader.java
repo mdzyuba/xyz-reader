@@ -16,8 +16,17 @@ public class ArticleLoader extends CursorLoader {
         return new ArticleLoader(context, ItemsContract.Items.buildItemUri(itemId));
     }
 
+    public static ArticleLoader newInstanceForAllItemIds(Context context) {
+        final String[] projection = {ItemsContract.Items._ID};
+        return new ArticleLoader(context, ItemsContract.Items.buildDirUri(), projection);
+    }
+
     private ArticleLoader(Context context, Uri uri) {
         super(context, uri, Query.PROJECTION, null, null, ItemsContract.Items.DEFAULT_SORT);
+    }
+
+    private ArticleLoader(Context context, Uri uri, String[] projection) {
+        super(context, uri, projection, null, null, ItemsContract.Items.DEFAULT_SORT);
     }
 
     public interface Query {
