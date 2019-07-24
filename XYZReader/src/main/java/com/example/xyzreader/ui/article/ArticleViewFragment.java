@@ -2,13 +2,20 @@ package com.example.xyzreader.ui.article;
 
 import android.arch.lifecycle.Observer;
 import android.arch.lifecycle.ViewModelProviders;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.ShareCompat;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.graphics.Palette;
+import android.support.v7.widget.Toolbar;
 import android.text.Spanned;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -20,6 +27,7 @@ import android.widget.TextView;
 import com.example.xyzreader.R;
 import com.example.xyzreader.XyzReaderApp;
 import com.example.xyzreader.model.Article;
+import com.example.xyzreader.ui.ActionBarHelper;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
 
@@ -28,13 +36,20 @@ import timber.log.Timber;
 public class ArticleViewFragment extends Fragment {
 
     private long startId;
-
     private ArticleViewModel viewModel;
     private LinearLayout titleBarContainer;
-
     private int mMutedColor = 0xFF333333;
 
     public ArticleViewFragment() {
+    }
+
+    public static ArticleViewFragment newInstance(long articleId) {
+        Timber.d("Create new ArticleViewFragment for the article id: %d", articleId);
+        Bundle args = new Bundle();
+        args.putLong(ArticleViewActivity.START_ID, articleId);
+        ArticleViewFragment fragment = new ArticleViewFragment();
+        fragment.setArguments(args);
+        return fragment;
     }
 
     @Nullable
@@ -42,23 +57,35 @@ public class ArticleViewFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_article_view, container, false);
+        initShareButton(rootView);
         return rootView;
     }
+
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         Bundle arguments = getArguments();
-        startId = arguments.getLong(ArticleViewActivity.START_ID);
+        if (arguments == null) {
+            Timber.e("The arguments must be provided.");
+            startId = 0;
+        } else {
+            startId = arguments.getLong(ArticleViewActivity.START_ID, 0);
+        }
         initViewModel(startId);
     }
 
     private void initViewModel(long startId) {
-        viewModel = ViewModelProviders.of(getActivity()).get(ArticleViewModel.class);
+        viewModel = ViewModelProviders.of(this).get(ArticleViewModel.class);
         viewModel.getArticleLiveData().observe(getViewLifecycleOwner(), new Observer<Article>() {
             @Override
             public void onChanged(@Nullable Article article) {
-                Timber.d("Article is ready");
+                if (article == null) {
+                    Timber.e("The article is null");
+                    return;
+                }
+                Timber.d("%d - Article is ready: %s, %s", startId, article.getItemId(), article.getTitle());
+                viewModel.getArticleLiveData().removeObserver(this);
                 initArticlePage(article);
             }
         });
@@ -66,10 +93,14 @@ public class ArticleViewFragment extends Fragment {
     }
 
     private void initArticlePage(@Nullable Article article) {
-        TextView title = getView().findViewById(R.id.article_title);
+        View view = getView();
+        if (view == null || article == null) {
+            return;
+        }
+        TextView title = view.findViewById(R.id.article_title);
         title.setText(article.getTitle());
-        TextView bylineView = getView().findViewById(R.id.article_byline);
-        titleBarContainer = getView().findViewById(R.id.meta_bar);
+        TextView bylineView = view.findViewById(R.id.article_byline);
+        titleBarContainer = view.findViewById(R.id.meta_bar);
 
         loadToolbarImage(article.getPhotoUrl());
 
@@ -82,14 +113,39 @@ public class ArticleViewFragment extends Fragment {
         Palette.from(bitmap).maximumColorCount(12).generate(new Palette.PaletteAsyncListener() {
             @Override
             public void onGenerated(@Nullable Palette palette) {
+                if (palette == null) {
+                    Timber.e("The palette is null");
+                    return;
+                }
                 mMutedColor = palette.getDarkMutedColor(0xFF333333);
                 titleBarContainer.setBackgroundColor(mMutedColor);
             }
         });
     }
 
-    void loadToolbarImage(String imageUrl) {
-        ImageView imageView = getActivity().findViewById(R.id.toolbar_image);
+    private void loadToolbarImage(@NonNull String imageUrl) {
+        View view = getView();
+        if (view == null) {
+            return;
+        }
+
+        Toolbar toolbar = view.findViewById(R.id.toolbar);
+        toolbar.setLogo(R.drawable.logo);
+
+        if (getActivity() instanceof IActionBarUpdater) {
+            ((IActionBarUpdater) getActivity()).updateActionBar(toolbar);
+        }
+
+        AppCompatActivity appCompatActivity = (AppCompatActivity) getActivity();
+        if (appCompatActivity != null) {
+            ActionBar actionBar = appCompatActivity.getSupportActionBar();
+            if (actionBar != null) {
+                ActionBarHelper.initActionBar(actionBar);
+                actionBar.setDisplayHomeAsUpEnabled(true);
+            }
+        }
+
+        ImageView imageView = view.findViewById(R.id.toolbar_image);
         if (imageView == null) {
             Timber.e("The image is not found");
             return;
@@ -114,12 +170,36 @@ public class ArticleViewFragment extends Fragment {
 
             }
         };
-        XyzReaderApp.getInstance().getPicasso()
-                    .load(imageUrl)
-                    .resize(imageView.getWidth(), imageView.getHeight())
-                    .centerCrop()
-                    .placeholder(R.drawable.image_placeholder)
-                    .into(target);
+        int width = imageView.getWidth();
+        int height = imageView.getHeight();
+        if (width > 0 && height > 0) {
+            XyzReaderApp.getInstance()
+                        .getPicasso()
+                        .load(imageUrl)
+                        .resize(width, height)
+                        .centerCrop()
+                        .placeholder(R.drawable.image_placeholder)
+                        .into(target);
+        }
+    }
+
+    private void initShareButton(View rootView) {
+        FloatingActionButton fab = rootView.findViewById(R.id.fab);
+        View.OnClickListener shareButtonOnClickListener = new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                FragmentActivity activity = getActivity();
+                if (activity == null) {
+                    return;
+                }
+                startActivity(Intent.createChooser(
+                        ShareCompat.IntentBuilder.from(activity)
+                                                 .setType("text/plain")
+                                                 .setText("Some sample text").getIntent(),
+                        getString(R.string.action_share)));
+            }
+        };
+        fab.setOnClickListener(shareButtonOnClickListener);
     }
 
 }

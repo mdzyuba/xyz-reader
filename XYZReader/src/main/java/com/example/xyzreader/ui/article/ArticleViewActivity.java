@@ -4,29 +4,30 @@ import android.arch.lifecycle.Observer;
 import android.arch.lifecycle.ViewModelProviders;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
-import android.support.v4.app.ShareCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
+import android.view.ViewGroup;
 
 import com.example.xyzreader.R;
 import com.example.xyzreader.data.ItemsContract;
 import com.example.xyzreader.ui.ActionBarHelper;
+import com.example.xyzreader.ui.ArticleListActivity;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import timber.log.Timber;
 
-public class ArticleViewActivity extends AppCompatActivity {
+public class ArticleViewActivity extends AppCompatActivity implements IActionBarUpdater {
 
     public static final String START_ID = "startId";
     private long startId;
@@ -44,16 +45,16 @@ public class ArticleViewActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
 
         initActionBar();
-        initShareButton();
 
         viewPager = findViewById(R.id.pager);
+        viewPager.setOffscreenPageLimit(2);
         myPagerAdapter = new MyPagerAdapter(getSupportFragmentManager());
         viewPager.setAdapter(myPagerAdapter);
 
         if (savedInstanceState == null) {
             if (getIntent() != null && getIntent().getData() != null) {
                 startId = ItemsContract.Items.getItemId(getIntent().getData());
-                Timber.d("startId: %s", startId);
+                Timber.d("onCreate ArticleViewActivity with the startId: %s", startId);
             }
         }
 
@@ -68,27 +69,31 @@ public class ArticleViewActivity extends AppCompatActivity {
         }
     }
 
-    private void initShareButton() {
-        FloatingActionButton fab = findViewById(R.id.fab);
-        View.OnClickListener shareButtonOnClickListener = new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                startActivity(Intent.createChooser(
-                        ShareCompat.IntentBuilder.from(ArticleViewActivity.this)
-                                                 .setType("text/plain")
-                                                 .setText("Some sample text").getIntent(),
-                        getString(R.string.action_share)));
-            }
-        };
-        fab.setOnClickListener(shareButtonOnClickListener);
-    }
-
     private void initArticlePageViewModel() {
         pageViewModel = ViewModelProviders.of(this).get(ArticlePageViewModel.class);
         pageViewModel.getItemIdsLiveData().observe(this, new Observer<List<Long>>() {
             @Override
             public void onChanged(@Nullable List<Long> articleIds) {
+                if (articleIds == null) {
+                    myPagerAdapter.setArticleIds(new ArrayList<>());
+                    return;
+                }
                 myPagerAdapter.setArticleIds(articleIds);
+                final int index = articleIds.indexOf(startId);
+                Timber.d("startId: %s, index: %s", startId, index);
+                if (index >= 0) {
+                    new Handler().post(new Runnable() {
+                        @Override
+                        public void run() {
+                            int currentItem = viewPager.getCurrentItem();
+                            long articleId = myPagerAdapter.articleIds.get(currentItem);
+                            Timber.d("Current item: %d, article id: %d", currentItem, articleId);
+                            long nextArticleId = myPagerAdapter.articleIds.get(index);
+                            Timber.d("Calling setCurrentItem with index: %d, article id: %d", index, nextArticleId);
+                            viewPager.setCurrentItem(index, false);
+                        }
+                    });
+                }
             }
         });
     }
@@ -109,10 +114,9 @@ public class ArticleViewActivity extends AppCompatActivity {
 
         @Override
         public Fragment getItem(int position) {
-            ArticleViewFragment fragment = new ArticleViewFragment();
-            Bundle extras = new Bundle();
-            extras.putLong(START_ID, articleIds.get(position));
-            fragment.setArguments(extras);
+            Long articleId = articleIds.get(position);
+            Timber.d("position: %d, articleId: %d", position, articleId);
+            ArticleViewFragment fragment = ArticleViewFragment.newInstance(articleId);
             return fragment;
         }
 
@@ -120,5 +124,27 @@ public class ArticleViewActivity extends AppCompatActivity {
         public int getCount() {
             return articleIds.size();
         }
+
+
+        @NonNull
+        @Override
+        public Object instantiateItem(@NonNull ViewGroup container, int position) {
+            return super.instantiateItem(container, position);
+        }
+    }
+
+    @Override
+    public void updateActionBar(Toolbar toolbar) {
+        setSupportActionBar(toolbar);
+
+        initActionBar();
+
+        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Timber.d("onOptionsItemSelected");
+                navigateUpTo(new Intent(getApplicationContext(), ArticleListActivity.class));
+            }
+        });
     }
 }

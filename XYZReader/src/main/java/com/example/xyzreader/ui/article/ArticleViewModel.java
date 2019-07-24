@@ -12,10 +12,12 @@ import com.example.xyzreader.data.ArticleLoader;
 import com.example.xyzreader.model.Article;
 import com.example.xyzreader.model.ArticleFactory;
 
+import timber.log.Timber;
+
 public class ArticleViewModel extends AndroidViewModel {
 
     private ArticleLoader articleLoader;
-    private MutableLiveData<Article> articleLiveData;
+    private final MutableLiveData<Article> articleLiveData;
 
     public ArticleViewModel(@NonNull Application application) {
         super(application);
@@ -23,13 +25,15 @@ public class ArticleViewModel extends AndroidViewModel {
     }
 
     public void loadArticle(long itemId) {
+        Timber.d("loadArticle: %d", itemId);
         articleLoader = ArticleLoader.newInstanceForItemId(getApplication(), itemId);
         articleLoader.registerListener(0, new Loader.OnLoadCompleteListener<Cursor>() {
             @Override
             public void onLoadComplete(@NonNull Loader<Cursor> loader, @Nullable Cursor cursor) {
-                if (cursor.moveToFirst() && !cursor.isAfterLast()) {
+                if (cursor != null && cursor.moveToFirst() && !cursor.isAfterLast()) {
                     Article article = new ArticleFactory().createArticle(cursor);
                     articleLiveData.postValue(article);
+                    Timber.d("Article is loaded: %d, %s", article.getItemId(), article.getTitle());
                 }
                 cursor.close();
             }
