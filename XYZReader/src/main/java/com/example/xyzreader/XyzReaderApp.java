@@ -49,17 +49,17 @@ public class XyzReaderApp extends Application {
     @NonNull
     public Picasso getPicasso() {
         if (instance == null) {
-                Picasso.Builder picassoBuilder =
-                        new Picasso.Builder(getApplicationContext())
-                                .listener(new Picasso.Listener() {
-                                    @Override
-                                    public void onImageLoadFailed(Picasso picasso, Uri uri, Exception exception) {
-                                        Timber.e(exception, "Error loading an image: %s",  uri);
-                                    }
-                                });
-                OkHttpClient client = getOkHttpClient();
-                picassoBuilder.downloader(new OkHttp3Downloader(client));
-                instance = picassoBuilder.build();
+            Picasso.Builder picassoBuilder =
+                    new Picasso.Builder(getApplicationContext()).listener(new Picasso.Listener() {
+                        @Override
+                        public void onImageLoadFailed(Picasso picasso, Uri uri,
+                                                      Exception exception) {
+                            Timber.e(exception, "Error loading an image: %s", uri);
+                        }
+                    });
+            OkHttpClient client = getOkHttpClient();
+            picassoBuilder.downloader(new OkHttp3Downloader(client));
+            instance = picassoBuilder.build();
         }
         return instance;
     }

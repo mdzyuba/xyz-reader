@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
@@ -33,13 +34,15 @@ import com.example.xyzreader.ui.ActionBarHelper;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import timber.log.Timber;
 
 public class ArticleViewFragment extends Fragment {
 
     private long startId;
     private ArticleViewModel viewModel;
-    private LinearLayout titleBarContainer;
     private int mMutedColor = 0xFF333333;
     private ArticleBodyRecyclerViewAdapter articleBodyRecyclerViewAdapter;
 
@@ -55,19 +58,37 @@ public class ArticleViewFragment extends Fragment {
         return fragment;
     }
 
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        Timber.d("onCreate");
+        if (articleBodyRecyclerViewAdapter == null) {
+            articleBodyRecyclerViewAdapter = new ArticleBodyRecyclerViewAdapter();
+        }
+    }
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_article_view, container, false);
+
+        RecyclerView recyclerView = rootView.findViewById(R.id.article_body);
+        LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
+        layoutManager.setInitialPrefetchItemCount(10);
+        recyclerView.setLayoutManager(layoutManager);
+        recyclerView.setHasFixedSize(true);
+        recyclerView.getRecycledViewPool().setMaxRecycledViews(R.layout.paragraph, 10);
+        recyclerView.setAdapter(articleBodyRecyclerViewAdapter);
+
         initShareButton(rootView);
         return rootView;
     }
 
-
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
+        Timber.d("onActivityCreated");
         Bundle arguments = getArguments();
         if (arguments == null) {
             Timber.e("The arguments must be provided.");
@@ -75,6 +96,7 @@ public class ArticleViewFragment extends Fragment {
         } else {
             startId = arguments.getLong(ArticleViewActivity.START_ID, 0);
         }
+        Timber.d("%d - onActivityCreated", startId);
         initViewModel(startId);
     }
 
@@ -89,36 +111,26 @@ public class ArticleViewFragment extends Fragment {
                 }
                 Timber.d("%d - Article is ready: %s, %s, %s", startId, article.getItemId(), article.getTitle(), article.getBody().substring(0, 20));
                 viewModel.getArticleLiveData().removeObserver(this);
-                initArticlePage(article);
+                articleBodyRecyclerViewAdapter.setArticle(article);
+            }
+        });
+        viewModel.getArticleParagraphsLiveData()
+                 .observe(getViewLifecycleOwner(), new Observer<List<Spanned>>() {
+                     @Override
+                     public void onChanged(@Nullable List<Spanned> paragraphs) {
+                         Timber.d("%d - setParagraphs: %d", startId, paragraphs.size());
+                         articleBodyRecyclerViewAdapter.setParagraphs(paragraphs);
+                     }
+                 });
+        viewModel.getPhotoUrlLiveData().observe(getViewLifecycleOwner(), new Observer<String>() {
+            @Override
+            public void onChanged(@Nullable String photoUrl) {
+                if (photoUrl != null) {
+                    loadToolbarImage(photoUrl);
+                }
             }
         });
         viewModel.loadArticle(startId);
-    }
-
-    private void initArticlePage(@Nullable Article article) {
-        View view = getView();
-        if (view == null || article == null) {
-            return;
-        }
-        TextView title = view.findViewById(R.id.article_title);
-        title.setText(article.getTitle());
-        TextView bylineView = view.findViewById(R.id.article_byline);
-        titleBarContainer = view.findViewById(R.id.meta_bar);
-
-        loadToolbarImage(article.getPhotoUrl());
-
-        Spanned text = new ArticleUI().formatDateAndAuthor(article.getAuthor(),
-                                                           article.getPublishedDate());
-        bylineView.setText(text);
-
-        RecyclerView recyclerView = view.findViewById(R.id.article_body);
-        LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
-        recyclerView.setLayoutManager(layoutManager);
-        if (articleBodyRecyclerViewAdapter == null) {
-            articleBodyRecyclerViewAdapter = new ArticleBodyRecyclerViewAdapter();
-        }
-        articleBodyRecyclerViewAdapter.setParagraphs(article.getTextParagraphs());
-        recyclerView.setAdapter(articleBodyRecyclerViewAdapter);
     }
 
     private void initTitleBarBackground(Bitmap bitmap) {
@@ -130,14 +142,17 @@ public class ArticleViewFragment extends Fragment {
                     return;
                 }
                 mMutedColor = palette.getDarkMutedColor(0xFF333333);
-                titleBarContainer.setBackgroundColor(mMutedColor);
+                articleBodyRecyclerViewAdapter.setMutedColor(mMutedColor);
+                Timber.d("mMutedColor: %d", mMutedColor);
             }
         });
     }
 
     private void loadToolbarImage(@NonNull String imageUrl) {
+        Timber.d("loadToolbarImage: load image: %s", imageUrl);
         View view = getView();
         if (view == null) {
+            Timber.e("loadToolbarImage: The view is null");
             return;
         }
 
@@ -159,22 +174,27 @@ public class ArticleViewFragment extends Fragment {
 
         ImageView imageView = view.findViewById(R.id.toolbar_image);
         if (imageView == null) {
-            Timber.e("The image is not found");
+            Timber.e("loadToolbarImage: The image is not found");
             return;
         }
+
+
         Target target = new Target() {
             @Override
             public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-                if (bitmap == null && titleBarContainer == null) {
+                if (bitmap == null ) { // | titleBarContainer == null
+                    Timber.e("loadToolbarImage: %s", bitmap);
                     return;
                 }
+                Timber.d("loadToolbarImage: setImageBitmap: %d bytes, %d width, %d height",
+                         bitmap.getByteCount(), bitmap.getWidth(), bitmap.getHeight());
                 imageView.setImageBitmap(bitmap);
                 initTitleBarBackground(bitmap);
             }
 
             @Override
             public void onBitmapFailed(Exception e, Drawable errorDrawable) {
-                Timber.e(e);
+                Timber.e(e, "loadToolbarImage: %s", e.getMessage());
             }
 
             @Override
@@ -185,6 +205,7 @@ public class ArticleViewFragment extends Fragment {
         int width = imageView.getWidth();
         int height = imageView.getHeight();
         if (width > 0 && height > 0) {
+            Timber.d("loadToolbarImage: loading the image: %d, %d", width, height);
             XyzReaderApp.getInstance()
                         .getPicasso()
                         .load(imageUrl)
@@ -192,6 +213,29 @@ public class ArticleViewFragment extends Fragment {
                         .centerCrop()
                         .placeholder(R.drawable.image_placeholder)
                         .into(target);
+        } else {
+            Timber.e("loadToolbarImage: The image width: %d or height: %d is 0", width, height);
+
+            imageView.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+                @Override
+                public void onLayoutChange(View v, int left, int top, int right, int bottom,
+                                           int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                    int width = imageView.getWidth();
+                    int height = imageView.getHeight();
+                    if (width > 0 && height > 0) {
+                        XyzReaderApp.getInstance()
+                                    .getPicasso()
+                                    .load(imageUrl)
+                                    .resize(width, height)
+                                    .centerCrop()
+                                    .placeholder(R.drawable.image_placeholder)
+                                    .into(target);
+                    } else {
+                        Timber.e("loadToolbarImage: again: The image width: %d or height: %d is 0", width,
+                                 height);
+                    }
+                }
+            });
         }
     }
 
@@ -215,52 +259,124 @@ public class ArticleViewFragment extends Fragment {
     }
 
 
-    static class ArticleBodyRecyclerViewAdapter extends RecyclerView.Adapter<ParagraphViewHolder> {
-        private Spanned[] paragraphs;
+    static class ArticleBodyRecyclerViewAdapter extends RecyclerView.Adapter<ArticleBodyRecyclerViewAdapter.ParagraphViewHolder> {
+        private Article article;
+        private List<Spanned> paragraphs;
+        private int mutedColor = 0xFF333333;
 
         ArticleBodyRecyclerViewAdapter() {
-            paragraphs = new Spanned[0];
+            paragraphs = new ArrayList<>();
         }
 
-        void setParagraphs(@NonNull Spanned[] paragraphs) {
+        void setParagraphs(@NonNull List<Spanned> paragraphs) {
             this.paragraphs = paragraphs;
+            notifyDataSetChanged();
+        }
+
+        public void setArticle(Article article) {
+            this.article = article;
+            notifyDataSetChanged();
+        }
+
+        public void setMutedColor(int mutedColor) {
+            this.mutedColor = mutedColor;
             notifyDataSetChanged();
         }
 
         @NonNull
         @Override
         public ParagraphViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            long t1 = SystemClock.elapsedRealtime();
             LayoutInflater layoutInflater = LayoutInflater.from(parent.getContext());
             final boolean shouldAttachToParentImmediately = false;
-            View view = layoutInflater
-                    .inflate(R.layout.paragraph, parent, shouldAttachToParentImmediately);
-            return new ParagraphViewHolder(view);
+            View view = layoutInflater.inflate(viewType, parent, shouldAttachToParentImmediately);
+
+            if (viewType == R.layout.paragraph) {
+                ParagraphViewHolder paragraphViewHolder = new ParagraphViewHolder(view);
+                long t2 = SystemClock.elapsedRealtime();
+                Timber.d("time to create a view holder: %d ms", (t2 - t1));
+                return paragraphViewHolder;
+            } else if (viewType == R.layout.article_view_title) {
+                TitleViewHolder titleViewHolder = new TitleViewHolder(view);
+                return titleViewHolder;
+            }
+            return null;
         }
 
         @Override
         public void onBindViewHolder(@NonNull ParagraphViewHolder paragraphViewHolder, int position) {
-            Spanned paragraph = paragraphs[position];
-            paragraphViewHolder.bind(paragraph);
-            paragraphViewHolder.paragraphTextView.setTag(paragraphViewHolder);
+            paragraphViewHolder.bind(position);
+            paragraphViewHolder.setTag(paragraphViewHolder);
         }
 
         @Override
         public int getItemCount() {
-            return paragraphs.length;
-        }
-    }
-
-
-    static class ParagraphViewHolder extends RecyclerView.ViewHolder {
-        final TextView paragraphTextView;
-
-        ParagraphViewHolder(@NonNull View itemView) {
-            super(itemView);
-            paragraphTextView = (TextView) itemView;
+            int size = paragraphs.size();
+            Timber.d("size: %d", size);
+            return size;
         }
 
-        void bind(Spanned text) {
-            paragraphTextView.setText(text);
+        @Override
+        public int getItemViewType(int position) {
+            if (position == 0) {
+                return R.layout.article_view_title;
+            }
+            return R.layout.paragraph;
+        }
+
+        class ParagraphViewHolder extends RecyclerView.ViewHolder {
+            TextView paragraphTextView;
+
+            ParagraphViewHolder(@NonNull View itemView) {
+                super(itemView);
+                if (itemView instanceof TextView) {
+                    paragraphTextView = (TextView) itemView;
+                }
+            }
+
+            void bind(int position) {
+                if (position > 0) {
+                    Spanned paragraph = paragraphs.get(position);
+                    paragraphTextView.setText(paragraph);
+                }
+            }
+
+            void setTag(ParagraphViewHolder viewHolder) {
+                this.paragraphTextView.setTag(viewHolder);
+            }
+        }
+
+        class TitleViewHolder extends ParagraphViewHolder {
+            LinearLayout metaBar;
+            TextView title;
+            TextView byline;
+
+            public TitleViewHolder(@NonNull View itemView) {
+                super(itemView);
+                if (itemView instanceof LinearLayout) {
+                    metaBar = itemView.findViewById(R.id.meta_bar);
+                    title = itemView.findViewById(R.id.article_title);
+                    byline = itemView.findViewById(R.id.article_byline);
+                }
+            }
+
+            @Override
+            void bind(int position) {
+                if (position > 0) {
+                    super.bind(position);
+                    return;
+                }
+                title.setText(article.getTitle());
+                Spanned text = new ArticleUI().formatDateAndAuthor(article.getAuthor(),
+                                                                   article.getPublishedDate());
+                byline.setText(text);
+                metaBar.setBackgroundColor(mutedColor);
+            }
+
+            @Override
+            void setTag(ParagraphViewHolder viewHolder) {
+                metaBar.setTag(viewHolder);
+            }
         }
     }
 }

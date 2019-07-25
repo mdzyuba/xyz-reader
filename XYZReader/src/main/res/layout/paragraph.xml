@@ -3,4 +3,6 @@
     android:id="@+id/paragraph"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:layout_marginStart="@dimen/text_margin"
+    android:layout_marginEnd="@dimen/text_margin"
     android:layout_marginBottom="@dimen/list_item_padding"/>
