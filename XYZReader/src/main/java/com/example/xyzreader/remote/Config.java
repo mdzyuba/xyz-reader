@@ -15,7 +15,7 @@ public class Config {
     static {
         URL url = null;
         try {
-            url = new URL(READER_JSON_2);
+            url = new URL(READER_JSON);
         } catch (MalformedURLException ignored) {
             // TODO: throw a real error
             Log.e(TAG, "Please check your internet connection.");

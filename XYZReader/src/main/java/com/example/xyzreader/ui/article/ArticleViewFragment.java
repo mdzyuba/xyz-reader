@@ -15,6 +15,8 @@ import android.support.v4.app.ShareCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.graphics.Palette;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.text.Spanned;
 import android.view.LayoutInflater;
@@ -39,6 +41,7 @@ public class ArticleViewFragment extends Fragment {
     private ArticleViewModel viewModel;
     private LinearLayout titleBarContainer;
     private int mMutedColor = 0xFF333333;
+    private ArticleBodyRecyclerViewAdapter articleBodyRecyclerViewAdapter;
 
     public ArticleViewFragment() {
     }
@@ -84,7 +87,7 @@ public class ArticleViewFragment extends Fragment {
                     Timber.e("The article is null");
                     return;
                 }
-                Timber.d("%d - Article is ready: %s, %s", startId, article.getItemId(), article.getTitle());
+                Timber.d("%d - Article is ready: %s, %s, %s", startId, article.getItemId(), article.getTitle(), article.getBody().substring(0, 20));
                 viewModel.getArticleLiveData().removeObserver(this);
                 initArticlePage(article);
             }
@@ -107,6 +110,15 @@ public class ArticleViewFragment extends Fragment {
         Spanned text = new ArticleUI().formatDateAndAuthor(article.getAuthor(),
                                                            article.getPublishedDate());
         bylineView.setText(text);
+
+        RecyclerView recyclerView = view.findViewById(R.id.article_body);
+        LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
+        recyclerView.setLayoutManager(layoutManager);
+        if (articleBodyRecyclerViewAdapter == null) {
+            articleBodyRecyclerViewAdapter = new ArticleBodyRecyclerViewAdapter();
+        }
+        articleBodyRecyclerViewAdapter.setParagraphs(article.getTextParagraphs());
+        recyclerView.setAdapter(articleBodyRecyclerViewAdapter);
     }
 
     private void initTitleBarBackground(Bitmap bitmap) {
@@ -202,4 +214,53 @@ public class ArticleViewFragment extends Fragment {
         fab.setOnClickListener(shareButtonOnClickListener);
     }
 
+
+    static class ArticleBodyRecyclerViewAdapter extends RecyclerView.Adapter<ParagraphViewHolder> {
+        private Spanned[] paragraphs;
+
+        ArticleBodyRecyclerViewAdapter() {
+            paragraphs = new Spanned[0];
+        }
+
+        void setParagraphs(@NonNull Spanned[] paragraphs) {
+            this.paragraphs = paragraphs;
+            notifyDataSetChanged();
+        }
+
+        @NonNull
+        @Override
+        public ParagraphViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            LayoutInflater layoutInflater = LayoutInflater.from(parent.getContext());
+            final boolean shouldAttachToParentImmediately = false;
+            View view = layoutInflater
+                    .inflate(R.layout.paragraph, parent, shouldAttachToParentImmediately);
+            return new ParagraphViewHolder(view);
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull ParagraphViewHolder paragraphViewHolder, int position) {
+            Spanned paragraph = paragraphs[position];
+            paragraphViewHolder.bind(paragraph);
+            paragraphViewHolder.paragraphTextView.setTag(paragraphViewHolder);
+        }
+
+        @Override
+        public int getItemCount() {
+            return paragraphs.length;
+        }
+    }
+
+
+    static class ParagraphViewHolder extends RecyclerView.ViewHolder {
+        final TextView paragraphTextView;
+
+        ParagraphViewHolder(@NonNull View itemView) {
+            super(itemView);
+            paragraphTextView = (TextView) itemView;
+        }
+
+        void bind(Spanned text) {
+            paragraphTextView.setText(text);
+        }
+    }
 }
