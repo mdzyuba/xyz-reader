@@ -24,21 +24,29 @@
     </style>
 
     <style name="Title" parent="TextAppearance.AppCompat.Large">
+        <item name="android:fontFamily">sans-serif-black</item>
         <item name="android:textColor">@color/theme_primary_dark</item>
     </style>
 
-    <style name="Subtitle" parent="TextAppearance.AppCompat.Medium">
+    <style name="Subtitle" parent="TextAppearance.AppCompat.Small">
+        <item name="android:fontFamily">sans-serif-light</item>
         <item name="android:textColor">@color/theme_primary_dark</item>
+    </style>
+
+    <style name="ArticleText" parent="TextAppearance.AppCompat.Body2">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textSize">@dimen/detail_body_text_size</item>
     </style>
 
     <style name="ArticleTitle" parent="TextAppearance.AppCompat.Headline">
         <item name="android:textColor">@color/action_title_bar_textColor</item>
-        <item name="android:fontFamily">sans-serif-condensed</item>
+        <item name="android:fontFamily">sans-serif-black</item>
         <item name="android:textStyle">bold</item>
         <item name="android:lineSpacingMultiplier">0.9</item>
     </style>
 
     <style name="ArticleTitlePubDate" parent="TextAppearance.AppCompat.Small">
+        <item name="android:fontFamily">sans-serif-light</item>
         <item name="android:textColor">@color/action_title_bar_textColor</item>
     </style>
 
