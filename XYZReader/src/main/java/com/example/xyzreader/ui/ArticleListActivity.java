@@ -5,26 +5,37 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.database.Cursor;
+import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.graphics.Palette;
+import android.support.v7.widget.AppCompatImageView;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.StaggeredGridLayoutManager;
 import android.text.Html;
 import android.text.format.DateUtils;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.MultiTransformation;
+import com.bumptech.glide.load.Transformation;
+import com.bumptech.glide.load.engine.Resource;
+import com.bumptech.glide.request.RequestOptions;
 import com.example.xyzreader.R;
 import com.example.xyzreader.data.ArticleLoader;
 import com.example.xyzreader.data.ItemsContract;
 import com.example.xyzreader.data.UpdaterService;
+import com.example.xyzreader.utils.ResizeAndCropTransformation;
 
+import java.security.MessageDigest;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -167,7 +178,6 @@ public class ArticleListActivity extends AppCompatActivity implements
             holder.titleView.setText(mCursor.getString(ArticleLoader.Query.TITLE));
             Date publishedDate = parsePublishedDate();
             if (!publishedDate.before(START_OF_EPOCH.getTime())) {
-
                 holder.subtitleView.setText(Html.fromHtml(
                         DateUtils.getRelativeTimeSpanString(
                                 publishedDate.getTime(),
@@ -183,25 +193,71 @@ public class ArticleListActivity extends AppCompatActivity implements
             }
             String url = mCursor.getString(ArticleLoader.Query.THUMB_URL);
             Timber.d("image url: %s", url);
-            Glide.with(ArticleListActivity.this).load(url).centerCrop().into(holder.thumbnailView);
+            float aspectRatio = mCursor.getFloat(ArticleLoader.Query.ASPECT_RATIO);
+
+            loadImage(holder, url, aspectRatio);
+        }
+
+        public void loadImage(ViewHolder holder, String url, float aspectRatio) {
+            Glide.with(ArticleListActivity.this)
+                 .load(url)
+                 .apply(new RequestOptions().placeholder(R.drawable.image_placeholder))
+                 .transform(new MultiTransformation(new ResizeAndCropTransformation(aspectRatio),
+                                                    new Transformation<Bitmap>() {
+                     @NonNull
+                     @Override
+                     public Resource<Bitmap> transform(@NonNull Context context,
+                                                       @NonNull Resource<Bitmap> resource, int outWidth,
+                                                       int outHeight) {
+                         Bitmap bitmap = resource.get();
+                         holder.updateCardBackground(bitmap);
+                         return resource;
+                     }
+
+                     @Override
+                     public void updateDiskCacheKey(@NonNull MessageDigest messageDigest) {
+
+                     }
+                 }))
+                 .into(holder.thumbnailView);
         }
 
         @Override
         public int getItemCount() {
             return mCursor.getCount();
         }
+
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        ImageView thumbnailView;
+        int mutedColor = 0xFF333333;
+        LinearLayout itemHolder;
+        AppCompatImageView thumbnailView;
         TextView titleView;
         TextView subtitleView;
 
         ViewHolder(View view) {
             super(view);
+            itemHolder = view.findViewById(R.id.item_holder);
             thumbnailView = view.findViewById(R.id.thumbnail);
             titleView = (TextView) view.findViewById(R.id.article_title);
             subtitleView = (TextView) view.findViewById(R.id.article_subtitle);
+        }
+
+
+        void updateCardBackground(Bitmap bitmap) {
+            Palette.from(bitmap).maximumColorCount(12).generate(new Palette.PaletteAsyncListener() {
+                @Override
+                public void onGenerated(@Nullable Palette palette) {
+                    if (palette == null) {
+                        Timber.e("The palette is null");
+                        return;
+                    }
+                    mutedColor = palette.getDarkMutedColor(0xFF333333);
+                    itemHolder.setBackgroundColor(mutedColor);
+                    Timber.d("mMutedColor: %d", mutedColor);
+                }
+            });
         }
     }
 }

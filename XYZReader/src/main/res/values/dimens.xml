@@ -7,16 +7,19 @@
     </item>
     <dimen name="article_title_padding">16dp</dimen>
 
+    <dimen name="card_cornerRadius">16dp</dimen>
+
     <dimen name="fab_elevation">2dp</dimen>
     <dimen name="fab_press_translation_z">6dp</dimen>
     <dimen name="fab_margin">24dp</dimen>
 
     <dimen name="list_padding">8dp</dimen>
     <dimen name="list_item_padding">16dp</dimen>
-    <dimen name="list_item_image_margin">16dp</dimen>
+    <dimen name="list_item_image_margin">8dp</dimen>
     <dimen name="thumbnail_height">104dp</dimen>
 
     <dimen name="card_margin">8dp</dimen>
+    <dimen name="card_side_margin">4dp</dimen>
     <dimen name="fab_width">56dp</dimen>
     <dimen name="fab_height">56dp</dimen>
     <dimen name="app_bar_height">180dp</dimen>

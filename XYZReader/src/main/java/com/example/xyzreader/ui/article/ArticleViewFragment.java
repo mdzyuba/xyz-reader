@@ -2,6 +2,7 @@ package com.example.xyzreader.ui.article;
 
 import android.arch.lifecycle.Observer;
 import android.arch.lifecycle.ViewModelProviders;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Bundle;
@@ -27,11 +28,15 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.Transformation;
+import com.bumptech.glide.load.engine.Resource;
 import com.bumptech.glide.request.RequestOptions;
 import com.example.xyzreader.R;
 import com.example.xyzreader.model.Article;
 import com.example.xyzreader.ui.ActionBarHelper;
+import com.example.xyzreader.utils.ResizeAndCropTransformation;
 
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,7 +46,6 @@ public class ArticleViewFragment extends Fragment {
 
     private long startId;
     private ArticleViewModel viewModel;
-    private int mMutedColor = 0xFF333333;
     private ArticleBodyRecyclerViewAdapter articleBodyRecyclerViewAdapter;
 
     public ArticleViewFragment() {
@@ -107,7 +111,8 @@ public class ArticleViewFragment extends Fragment {
                     Timber.e("The article is null");
                     return;
                 }
-                Timber.d("%d - Article is ready: %s, %s, %s", startId, article.getItemId(), article.getTitle(), article.getBody().substring(0, 20));
+                Timber.d("%d - Article is ready: %s, %s, %s", startId, article.getItemId(),
+                         article.getTitle(), article.getBody().substring(0, 20));
                 viewModel.getArticleLiveData().removeObserver(this);
                 articleBodyRecyclerViewAdapter.setArticle(article);
             }
@@ -123,6 +128,7 @@ public class ArticleViewFragment extends Fragment {
                          articleBodyRecyclerViewAdapter.setParagraphs(paragraphs);
                      }
                  });
+        // TODO: move that to the viewHolder update.
         viewModel.getPhotoUrlLiveData().observe(getViewLifecycleOwner(), new Observer<String>() {
             @Override
             public void onChanged(@Nullable String photoUrl) {
@@ -142,9 +148,10 @@ public class ArticleViewFragment extends Fragment {
                     Timber.e("The palette is null");
                     return;
                 }
-                mMutedColor = palette.getDarkMutedColor(0xFF333333);
-                articleBodyRecyclerViewAdapter.setMutedColor(mMutedColor);
-                Timber.d("mMutedColor: %d", mMutedColor);
+                int mutedColor = 0xFF333333;
+                mutedColor = palette.getDarkMutedColor(0xFF333333);
+                articleBodyRecyclerViewAdapter.setMutedColor(mutedColor);
+                Timber.d("mutedColor: %d", mutedColor);
             }
         });
     }
@@ -179,8 +186,31 @@ public class ArticleViewFragment extends Fragment {
             return;
         }
 
-        Glide.with(this).load(imageUrl).apply(
-                RequestOptions.centerCropTransform()).into(imageView);
+        loadImage(imageUrl, imageView);
+    }
+
+    private void loadImage(@NonNull String imageUrl, ImageView imageView) {
+        Glide.with(this)
+             .load(imageUrl)
+             .apply(new RequestOptions().placeholder(R.drawable.image_placeholder))
+             .transform(new ResizeAndCropTransformation())
+             .optionalTransform(new Transformation<Bitmap>() {
+                 @NonNull
+                 @Override
+                 public Resource<Bitmap> transform(@NonNull Context context,
+                                                   @NonNull Resource<Bitmap> resource, int outWidth,
+                                                   int outHeight) {
+                     Bitmap bitmap = resource.get();
+                     initTitleBarBackground(bitmap);
+                     return resource;
+                 }
+
+                 @Override
+                 public void updateDiskCacheKey(@NonNull MessageDigest messageDigest) {
+
+                 }
+             })
+             .into(imageView);
     }
 
     private void initShareButton(View rootView) {
@@ -242,6 +272,7 @@ public class ArticleViewFragment extends Fragment {
                 return paragraphViewHolder;
             } else if (viewType == R.layout.article_view_title) {
                 TitleViewHolder titleViewHolder = new TitleViewHolder(view);
+                titleViewHolder.setMutedColor(mutedColor);
                 return titleViewHolder;
             }
             return new ParagraphViewHolder(view);
@@ -294,6 +325,7 @@ public class ArticleViewFragment extends Fragment {
             LinearLayout metaBar;
             TextView title;
             TextView byline;
+            int mutedColor = 0xFF333333;
 
             TitleViewHolder(@NonNull View itemView) {
                 super(itemView);
@@ -302,6 +334,10 @@ public class ArticleViewFragment extends Fragment {
                     title = itemView.findViewById(R.id.article_title);
                     byline = itemView.findViewById(R.id.article_byline);
                 }
+            }
+
+            public void setMutedColor(int mutedColor) {
+                this.mutedColor = mutedColor;
             }
 
             @Override

@@ -18,13 +18,13 @@
 <resources>
     <color name="photo_placeholder">#00CCCCCC</color>
 
-    <color name="theme_primary">#43A047</color>
-    <color name="theme_secondary">#81C784</color>
-    <color name="theme_primary_dark">#1B5E20</color>
-    <color name="theme_accent">#FF9800</color>
+    <color name="theme_primary">#283593</color>
+    <color name="theme_secondary">#5f5fc4</color>
+    <color name="theme_primary_dark">#001064</color>
+    <color name="theme_accent">@color/theme_primary</color>
     <color name="ltgray">#ffe0e0e0</color>
     <color name="article_detail_text_background">#fff</color>
-    <color name="article_title_bar_background">@color/theme_primary_dark</color>
-    <color name="action_title_bar_textColor">#fff</color>
+    <color name="article_title_bar_background">@android:color/white</color>
+    <color name="action_title_bar_textColor">@android:color/white</color>
     <color name="image_placeholder">#fff</color>
 </resources>

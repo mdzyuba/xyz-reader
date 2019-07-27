@@ -25,12 +25,12 @@
 
     <style name="Title" parent="TextAppearance.AppCompat.Large">
         <item name="android:fontFamily">sans-serif-black</item>
-        <item name="android:textColor">@color/theme_primary_dark</item>
+        <item name="android:textColor">@color/action_title_bar_textColor</item>
     </style>
 
     <style name="Subtitle" parent="TextAppearance.AppCompat.Small">
         <item name="android:fontFamily">sans-serif-light</item>
-        <item name="android:textColor">@color/theme_primary_dark</item>
+        <item name="android:textColor">@color/action_title_bar_textColor</item>
     </style>
 
     <style name="ArticleText" parent="TextAppearance.AppCompat.Body2">
