@@ -4,7 +4,6 @@ import android.arch.lifecycle.Observer;
 import android.arch.lifecycle.ViewModelProviders;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.support.annotation.NonNull;
@@ -27,12 +26,11 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.RequestOptions;
 import com.example.xyzreader.R;
-import com.example.xyzreader.XyzReaderApp;
 import com.example.xyzreader.model.Article;
 import com.example.xyzreader.ui.ActionBarHelper;
-import com.squareup.picasso.Picasso;
-import com.squareup.picasso.Target;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -118,6 +116,9 @@ public class ArticleViewFragment extends Fragment {
                  .observe(getViewLifecycleOwner(), new Observer<List<Spanned>>() {
                      @Override
                      public void onChanged(@Nullable List<Spanned> paragraphs) {
+                         if (paragraphs == null) {
+                             return;
+                         }
                          Timber.d("%d - setParagraphs: %d", startId, paragraphs.size());
                          articleBodyRecyclerViewAdapter.setParagraphs(paragraphs);
                      }
@@ -178,65 +179,8 @@ public class ArticleViewFragment extends Fragment {
             return;
         }
 
-
-        Target target = new Target() {
-            @Override
-            public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-                if (bitmap == null ) { // | titleBarContainer == null
-                    Timber.e("loadToolbarImage: %s", bitmap);
-                    return;
-                }
-                Timber.d("loadToolbarImage: setImageBitmap: %d bytes, %d width, %d height",
-                         bitmap.getByteCount(), bitmap.getWidth(), bitmap.getHeight());
-                imageView.setImageBitmap(bitmap);
-                initTitleBarBackground(bitmap);
-            }
-
-            @Override
-            public void onBitmapFailed(Exception e, Drawable errorDrawable) {
-                Timber.e(e, "loadToolbarImage: %s", e.getMessage());
-            }
-
-            @Override
-            public void onPrepareLoad(Drawable placeHolderDrawable) {
-
-            }
-        };
-        int width = imageView.getWidth();
-        int height = imageView.getHeight();
-        if (width > 0 && height > 0) {
-            Timber.d("loadToolbarImage: loading the image: %d, %d", width, height);
-            XyzReaderApp.getInstance()
-                        .getPicasso()
-                        .load(imageUrl)
-                        .resize(width, height)
-                        .centerCrop()
-                        .placeholder(R.drawable.image_placeholder)
-                        .into(target);
-        } else {
-            Timber.e("loadToolbarImage: The image width: %d or height: %d is 0", width, height);
-
-            imageView.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
-                @Override
-                public void onLayoutChange(View v, int left, int top, int right, int bottom,
-                                           int oldLeft, int oldTop, int oldRight, int oldBottom) {
-                    int width = imageView.getWidth();
-                    int height = imageView.getHeight();
-                    if (width > 0 && height > 0) {
-                        XyzReaderApp.getInstance()
-                                    .getPicasso()
-                                    .load(imageUrl)
-                                    .resize(width, height)
-                                    .centerCrop()
-                                    .placeholder(R.drawable.image_placeholder)
-                                    .into(target);
-                    } else {
-                        Timber.e("loadToolbarImage: again: The image width: %d or height: %d is 0", width,
-                                 height);
-                    }
-                }
-            });
-        }
+        Glide.with(this).load(imageUrl).apply(
+                RequestOptions.centerCropTransform()).into(imageView);
     }
 
     private void initShareButton(View rootView) {
@@ -273,12 +217,12 @@ public class ArticleViewFragment extends Fragment {
             notifyDataSetChanged();
         }
 
-        public void setArticle(Article article) {
+        void setArticle(Article article) {
             this.article = article;
             notifyDataSetChanged();
         }
 
-        public void setMutedColor(int mutedColor) {
+        void setMutedColor(int mutedColor) {
             this.mutedColor = mutedColor;
             notifyDataSetChanged();
         }
@@ -300,7 +244,7 @@ public class ArticleViewFragment extends Fragment {
                 TitleViewHolder titleViewHolder = new TitleViewHolder(view);
                 return titleViewHolder;
             }
-            return null;
+            return new ParagraphViewHolder(view);
         }
 
         @Override
@@ -351,7 +295,7 @@ public class ArticleViewFragment extends Fragment {
             TextView title;
             TextView byline;
 
-            public TitleViewHolder(@NonNull View itemView) {
+            TitleViewHolder(@NonNull View itemView) {
                 super(itemView);
                 if (itemView instanceof LinearLayout) {
                     metaBar = itemView.findViewById(R.id.meta_bar);

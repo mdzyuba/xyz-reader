@@ -9,17 +9,17 @@ import android.os.Bundle;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
 import android.support.v4.widget.SwipeRefreshLayout;
-import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.StaggeredGridLayoutManager;
 import android.text.Html;
 import android.text.format.DateUtils;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
 import com.example.xyzreader.R;
 import com.example.xyzreader.data.ArticleLoader;
 import com.example.xyzreader.data.ItemsContract;
@@ -30,6 +30,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.GregorianCalendar;
 
+import timber.log.Timber;
+
 /**
  * An activity representing a list of Articles. This activity has different presentations for
  * handset and tablet-size devices. On handsets, the activity presents a list of items, which when
@@ -39,7 +41,6 @@ import java.util.GregorianCalendar;
 public class ArticleListActivity extends AppCompatActivity implements
         LoaderManager.LoaderCallbacks<Cursor> {
 
-    private static final String TAG = ArticleListActivity.class.toString();
     private SwipeRefreshLayout mSwipeRefreshLayout;
     private RecyclerView mRecyclerView;
 
@@ -125,7 +126,7 @@ public class ArticleListActivity extends AppCompatActivity implements
     private class Adapter extends RecyclerView.Adapter<ViewHolder> {
         private Cursor mCursor;
 
-        public Adapter(Cursor cursor) {
+        Adapter(Cursor cursor) {
             mCursor = cursor;
         }
 
@@ -154,8 +155,8 @@ public class ArticleListActivity extends AppCompatActivity implements
                 String date = mCursor.getString(ArticleLoader.Query.PUBLISHED_DATE);
                 return dateFormat.parse(date);
             } catch (ParseException ex) {
-                Log.e(TAG, ex.getMessage());
-                Log.i(TAG, "passing today's date");
+                Timber.e(ex);
+                Timber.i("passing today's date");
                 return new Date();
             }
         }
@@ -180,10 +181,9 @@ public class ArticleListActivity extends AppCompatActivity implements
                         + "<br/>" + " by "
                         + mCursor.getString(ArticleLoader.Query.AUTHOR)));
             }
-            holder.thumbnailView.setImageUrl(
-                    mCursor.getString(ArticleLoader.Query.THUMB_URL),
-                    ImageLoaderHelper.getInstance(ArticleListActivity.this).getImageLoader());
-            holder.thumbnailView.setAspectRatio(mCursor.getFloat(ArticleLoader.Query.ASPECT_RATIO));
+            String url = mCursor.getString(ArticleLoader.Query.THUMB_URL);
+            Timber.d("image url: %s", url);
+            Glide.with(ArticleListActivity.this).load(url).centerCrop().into(holder.thumbnailView);
         }
 
         @Override
@@ -193,13 +193,13 @@ public class ArticleListActivity extends AppCompatActivity implements
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        public DynamicHeightNetworkImageView thumbnailView;
-        public TextView titleView;
-        public TextView subtitleView;
+        ImageView thumbnailView;
+        TextView titleView;
+        TextView subtitleView;
 
-        public ViewHolder(View view) {
+        ViewHolder(View view) {
             super(view);
-            thumbnailView = (DynamicHeightNetworkImageView) view.findViewById(R.id.thumbnail);
+            thumbnailView = view.findViewById(R.id.thumbnail);
             titleView = (TextView) view.findViewById(R.id.article_title);
             subtitleView = (TextView) view.findViewById(R.id.article_subtitle);
         }
