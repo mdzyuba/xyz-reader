@@ -45,8 +45,11 @@ public class ResizeAndCropTransformation extends BitmapTransformation {
         if (height < scaledBitmap.getHeight()) {
             dy = (scaledBitmap.getHeight() - height) / 2;
         }
-        Bitmap croppedBitmap = Bitmap.createBitmap(scaledBitmap, 0, dy, outWidth, height);
-        return croppedBitmap;
+        if ((dy + height) <= scaledBitmap.getHeight()) {
+            Bitmap croppedBitmap = Bitmap.createBitmap(scaledBitmap, 0, dy, outWidth, height);
+            return croppedBitmap;
+        }
+        return scaledBitmap;
     }
 
     @Override

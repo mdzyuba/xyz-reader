@@ -41,7 +41,6 @@
         <activity
             android:name=".ui.article.ArticleViewActivity"
             android:label="@string/title_activity_article_view"
-            android:theme="@style/Theme.Bacon.NoActionBar"
             android:parentActivityName=".ui.ArticleListActivity"
             android:configChanges="keyboardHidden|orientation|screenSize">
             <intent-filter>
