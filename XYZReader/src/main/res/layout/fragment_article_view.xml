@@ -13,7 +13,8 @@
         android:layout_width="match_parent"
         android:layout_height="@dimen/app_bar_height"
         android:fitsSystemWindows="true"
-        android:theme="@style/Theme.Bacon.AppBarOverlay">
+        android:theme="@style/Theme.Bacon.AppBarOverlay"
+        app:elevation="@dimen/app_bar_elevation">
 
         <android.support.design.widget.CollapsingToolbarLayout
             android:id="@+id/toolbar_layout"

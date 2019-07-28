@@ -25,8 +25,8 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="@dimen/list_item_image_margin"
             android:adjustViewBounds="true"
-            android:scaleType="fitXY"
-            android:background="@color/photo_placeholder" />
+            android:background="@color/photo_placeholder"
+            android:scaleType="fitCenter" />
 
         <TextView
             android:id="@+id/article_title"
