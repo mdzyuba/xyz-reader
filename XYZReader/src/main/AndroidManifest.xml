@@ -40,6 +40,7 @@
 
         <activity
             android:name=".ui.article.ArticleViewActivity"
+            android:theme="@style/Theme.Bacon.Detail"
             android:label="@string/title_activity_article_view"
             android:parentActivityName=".ui.ArticleListActivity"
             android:configChanges="keyboardHidden|orientation|screenSize">

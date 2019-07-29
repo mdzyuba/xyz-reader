@@ -6,11 +6,15 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
+import android.support.v4.util.Pair;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.graphics.Palette;
@@ -20,8 +24,12 @@ import android.support.v7.widget.StaggeredGridLayoutManager;
 import android.support.v7.widget.Toolbar;
 import android.text.Html;
 import android.text.format.DateUtils;
+import android.transition.Slide;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AnimationUtils;
+import android.view.animation.Interpolator;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -34,6 +42,7 @@ import com.example.xyzreader.R;
 import com.example.xyzreader.data.ArticleLoader;
 import com.example.xyzreader.data.ItemsContract;
 import com.example.xyzreader.data.UpdaterService;
+import com.example.xyzreader.ui.article.ArticleViewActivity;
 import com.example.xyzreader.utils.ResizeAndCropTransformation;
 
 import java.security.MessageDigest;
@@ -157,8 +166,26 @@ public class ArticleListActivity extends AppCompatActivity implements
             view.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    startActivity(new Intent(Intent.ACTION_VIEW,
-                            ItemsContract.Items.buildItemUri(getItemId(vh.getAdapterPosition()))));
+                    Intent intent = new Intent(Intent.ACTION_VIEW, ItemsContract.Items
+                            .buildItemUri(getItemId(vh.getAdapterPosition())));
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        ArticleListActivity activity = ArticleListActivity.this;
+                        ActivityOptionsCompat activityOptions =
+                                ActivityOptionsCompat.makeSceneTransitionAnimation(activity, vh.thumbnailView, vh.thumbnailView.getTransitionName());
+
+                        Slide slide = new Slide(Gravity.BOTTOM);
+                        slide.addTarget(R.id.toolbar_image);
+                        Interpolator interpolator = AnimationUtils
+                                .loadInterpolator(activity, android.R.interpolator.linear_out_slow_in);
+                        slide.setInterpolator(interpolator);
+                        slide.setDuration(2000L);
+                        getWindow().setEnterTransition(slide);
+
+                        ActivityCompat.startActivity(activity, intent, activityOptions.toBundle());
+                    } else {
+                        startActivity(intent);
+                    }
                 }
             });
             return vh;

@@ -30,7 +30,7 @@
                 app:elevation="@dimen/app_bar_elevation"
                 app:layout_collapseMode="pin"
                 app:popupTheme="@style/Theme.Bacon.PopupOverlay"
-                app:theme="@style/Theme.Bacon.AppBarOverlay" />
+                android:theme="@style/Theme.Bacon.AppBarOverlay" />
 
         </android.support.design.widget.CollapsingToolbarLayout>
 

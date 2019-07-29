@@ -16,6 +16,7 @@ import android.support.v4.app.ShareCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.graphics.Palette;
+import android.support.v7.widget.AppCompatImageView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
@@ -82,7 +83,6 @@ public class ArticleViewFragment extends Fragment {
         recyclerView.setHasFixedSize(true);
         recyclerView.getRecycledViewPool().setMaxRecycledViews(R.layout.paragraph, 10);
         recyclerView.setAdapter(articleBodyRecyclerViewAdapter);
-
         initShareButton(rootView);
         return rootView;
     }
@@ -180,12 +180,11 @@ public class ArticleViewFragment extends Fragment {
             }
         }
 
-        ImageView imageView = view.findViewById(R.id.toolbar_image);
+        AppCompatImageView imageView = view.findViewById(R.id.toolbar_image);
         if (imageView == null) {
             Timber.e("loadToolbarImage: The image is not found");
             return;
         }
-
         loadImage(imageUrl, imageView);
     }
 

@@ -25,6 +25,9 @@
         <item name="windowNoTitle">true</item>
     </style>
 
+    <style name="Theme.Bacon.Detail" parent="@style/Theme.Bacon">
+    </style>
+
     <style name="Title" parent="TextAppearance.AppCompat.Large">
         <item name="android:fontFamily">sans-serif-black</item>
         <item name="android:textColor">@color/action_title_bar_textColor</item>

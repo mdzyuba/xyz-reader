@@ -6,7 +6,7 @@
     <string name="action_refresh">Refresh</string>
     <string name="action_settings">Settings</string>
     <string name="action_share">Share</string>
-
+    <string name="article_photo">ArticlePhoto</string>
     <string name="up">Up</string>
     <string name="title_activity_article_view">ArticleViewActivity</string>
     <string name="large_text">

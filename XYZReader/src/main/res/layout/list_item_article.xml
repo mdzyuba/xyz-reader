@@ -20,6 +20,7 @@
             android:id="@+id/thumbnail"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:transitionName="@string/article_photo"
             android:layout_marginBottom="@dimen/list_item_image_margin"
             android:adjustViewBounds="true"
             android:background="@color/photo_placeholder"
