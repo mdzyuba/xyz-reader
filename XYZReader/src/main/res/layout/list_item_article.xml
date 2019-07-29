@@ -1,20 +1,14 @@
-
-<!--android:layout_marginTop="@dimen/card_margin"-->
-
 <android.support.v7.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginLeft="@dimen/card_side_margin"
-    android:layout_marginRight="@dimen/card_side_margin"
-    android:layout_marginBottom="@dimen/card_margin"
-    app:cardCornerRadius="@dimen/card_cornerRadius"
-    app:cardElevation="@dimen/card_elevation"
-    app:cardUseCompatPadding="true"
-    app:contentPadding="@dimen/card_padding"
     android:clickable="true"
     android:focusable="true"
-    android:foreground="?selectableItemBackground">
+    android:foreground="?selectableItemBackground"
+    app:cardElevation="@dimen/card_elevation"
+    app:cardCornerRadius="@dimen/card_cornerRadius"
+    app:cardUseCompatPadding="true"
+    app:contentPadding="@dimen/card_padding">
 
     <LinearLayout
         android:id="@+id/item_holder"
@@ -40,7 +34,7 @@
             android:maxLines="4"
             android:paddingLeft="@dimen/list_item_padding"
             android:paddingRight="@dimen/list_item_padding"
-            android:paddingBottom="@dimen/list_item_padding"/>
+            android:paddingBottom="@dimen/list_item_padding" />
 
         <TextView
             android:id="@+id/article_subtitle"
@@ -51,7 +45,7 @@
             android:maxLines="2"
             android:paddingLeft="@dimen/list_item_padding"
             android:paddingRight="@dimen/list_item_padding"
-            android:paddingBottom="@dimen/list_item_padding"/>
+            android:paddingBottom="@dimen/list_item_padding" />
 
     </LinearLayout>
 
