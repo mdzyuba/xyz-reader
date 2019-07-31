@@ -5,19 +5,14 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.database.Cursor;
-import android.graphics.Bitmap;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
-import android.support.v4.util.Pair;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.graphics.Palette;
 import android.support.v7.widget.AppCompatImageView;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.StaggeredGridLayoutManager;
@@ -33,19 +28,11 @@ import android.view.animation.Interpolator;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.MultiTransformation;
-import com.bumptech.glide.load.Transformation;
-import com.bumptech.glide.load.engine.Resource;
-import com.bumptech.glide.request.RequestOptions;
 import com.example.xyzreader.R;
 import com.example.xyzreader.data.ArticleLoader;
 import com.example.xyzreader.data.ItemsContract;
 import com.example.xyzreader.data.UpdaterService;
-import com.example.xyzreader.ui.article.ArticleViewActivity;
-import com.example.xyzreader.utils.ResizeAndCropTransformation;
 
-import java.security.MessageDigest;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -172,7 +159,9 @@ public class ArticleListActivity extends AppCompatActivity implements
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                         ArticleListActivity activity = ArticleListActivity.this;
                         ActivityOptionsCompat activityOptions =
-                                ActivityOptionsCompat.makeSceneTransitionAnimation(activity, vh.thumbnailView, vh.thumbnailView.getTransitionName());
+                                ActivityOptionsCompat.makeSceneTransitionAnimation(activity,
+                                                                                   vh.thumbnailView,
+                                                                                   vh.thumbnailView.getTransitionName());
 
                         Slide slide = new Slide(Gravity.BOTTOM);
                         slide.addTarget(R.id.toolbar_image);
@@ -224,32 +213,14 @@ public class ArticleListActivity extends AppCompatActivity implements
             String url = mCursor.getString(ArticleLoader.Query.THUMB_URL);
             Timber.d("image url: %s", url);
             float aspectRatio = mCursor.getFloat(ArticleLoader.Query.ASPECT_RATIO);
-
-            loadImage(holder, url, aspectRatio);
-        }
-
-        public void loadImage(ViewHolder holder, String url, float aspectRatio) {
-            Glide.with(ArticleListActivity.this)
-                 .load(url)
-                 .apply(new RequestOptions().placeholder(R.drawable.image_placeholder))
-                 .transform(new MultiTransformation(new ResizeAndCropTransformation(aspectRatio),
-                                                    new Transformation<Bitmap>() {
-                     @NonNull
-                     @Override
-                     public Resource<Bitmap> transform(@NonNull Context context,
-                                                       @NonNull Resource<Bitmap> resource, int outWidth,
-                                                       int outHeight) {
-                         Bitmap bitmap = resource.get();
-                         holder.updateCardBackground(bitmap);
-                         return resource;
-                     }
-
-                     @Override
-                     public void updateDiskCacheKey(@NonNull MessageDigest messageDigest) {
-
-                     }
-                 }))
-                 .into(holder.thumbnailView);
+            ImageLoader.TitleBackgroundUpdater titleBackgroundUpdater = new ImageLoader.TitleBackgroundUpdater() {
+                @Override
+                public void setBackgroundColor(int color) {
+                    holder.itemHolder.setBackgroundColor(color);
+                }
+            };
+            ImageLoader.loadImage(ArticleListActivity.this, url, holder.thumbnailView,
+                                  aspectRatio, titleBackgroundUpdater);
         }
 
         @Override
@@ -260,7 +231,6 @@ public class ArticleListActivity extends AppCompatActivity implements
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        int mutedColor = 0xFF333333;
         LinearLayout itemHolder;
         AppCompatImageView thumbnailView;
         TextView titleView;
@@ -270,24 +240,8 @@ public class ArticleListActivity extends AppCompatActivity implements
             super(view);
             itemHolder = view.findViewById(R.id.item_holder);
             thumbnailView = view.findViewById(R.id.thumbnail);
-            titleView = (TextView) view.findViewById(R.id.article_title);
-            subtitleView = (TextView) view.findViewById(R.id.article_subtitle);
-        }
-
-
-        void updateCardBackground(Bitmap bitmap) {
-            Palette.from(bitmap).maximumColorCount(12).generate(new Palette.PaletteAsyncListener() {
-                @Override
-                public void onGenerated(@Nullable Palette palette) {
-                    if (palette == null) {
-                        Timber.e("The palette is null");
-                        return;
-                    }
-                    mutedColor = palette.getDarkMutedColor(0xFF333333);
-                    itemHolder.setBackgroundColor(mutedColor);
-                    Timber.d("mMutedColor: %d", mutedColor);
-                }
-            });
+            titleView = view.findViewById(R.id.article_title);
+            subtitleView = view.findViewById(R.id.article_subtitle);
         }
     }
 }

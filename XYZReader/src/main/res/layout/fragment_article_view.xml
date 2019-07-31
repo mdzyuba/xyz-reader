@@ -26,7 +26,7 @@
             <android.support.v7.widget.AppCompatImageView
                 android:id="@+id/toolbar_image"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:layout_height="wrap_content"
                 android:transitionName="@string/article_photo"
                 android:scaleType="centerCrop"
                 android:fitsSystemWindows="true"

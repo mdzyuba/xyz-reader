@@ -2,9 +2,7 @@ package com.example.xyzreader.ui.article;
 
 import android.arch.lifecycle.Observer;
 import android.arch.lifecycle.ViewModelProviders;
-import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.support.annotation.NonNull;
@@ -15,7 +13,6 @@ import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.ShareCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.graphics.Palette;
 import android.support.v7.widget.AppCompatImageView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -24,20 +21,14 @@ import android.text.Spanned;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.Transformation;
-import com.bumptech.glide.load.engine.Resource;
-import com.bumptech.glide.request.RequestOptions;
 import com.example.xyzreader.R;
 import com.example.xyzreader.model.Article;
 import com.example.xyzreader.ui.ActionBarHelper;
-import com.example.xyzreader.utils.ResizeAndCropTransformation;
+import com.example.xyzreader.ui.ImageLoader;
 
-import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -115,6 +106,7 @@ public class ArticleViewFragment extends Fragment {
                          article.getTitle(), article.getBody().substring(0, 20));
                 viewModel.getArticleLiveData().removeObserver(this);
                 articleBodyRecyclerViewAdapter.setArticle(article);
+                loadToolbarImage(article);
             }
         });
         viewModel.getArticleParagraphsLiveData()
@@ -128,36 +120,11 @@ public class ArticleViewFragment extends Fragment {
                          articleBodyRecyclerViewAdapter.setParagraphs(paragraphs);
                      }
                  });
-        // TODO: move that to the viewHolder update.
-        viewModel.getPhotoUrlLiveData().observe(getViewLifecycleOwner(), new Observer<String>() {
-            @Override
-            public void onChanged(@Nullable String photoUrl) {
-                if (photoUrl != null) {
-                    loadToolbarImage(photoUrl);
-                }
-            }
-        });
         viewModel.loadArticle(startId);
     }
 
-    private void initTitleBarBackground(Bitmap bitmap) {
-        Palette.from(bitmap).maximumColorCount(12).generate(new Palette.PaletteAsyncListener() {
-            @Override
-            public void onGenerated(@Nullable Palette palette) {
-                if (palette == null) {
-                    Timber.e("The palette is null");
-                    return;
-                }
-                int mutedColor = 0xFF333333;
-                mutedColor = palette.getDarkMutedColor(0xFF333333);
-                articleBodyRecyclerViewAdapter.setMutedColor(mutedColor);
-                Timber.d("mutedColor: %d", mutedColor);
-            }
-        });
-    }
-
-    private void loadToolbarImage(@NonNull String imageUrl) {
-        Timber.d("loadToolbarImage: load image: %s", imageUrl);
+    private void loadToolbarImage(Article article) {
+        Timber.d("loadToolbarImage: load image: %s", article.getPhotoUrl());
         View view = getView();
         if (view == null) {
             Timber.e("loadToolbarImage: The view is null");
@@ -185,31 +152,15 @@ public class ArticleViewFragment extends Fragment {
             Timber.e("loadToolbarImage: The image is not found");
             return;
         }
-        loadImage(imageUrl, imageView);
-    }
-
-    private void loadImage(@NonNull String imageUrl, ImageView imageView) {
-        Glide.with(this)
-             .load(imageUrl)
-             .apply(new RequestOptions().placeholder(R.drawable.image_placeholder))
-             .transform(new ResizeAndCropTransformation())
-             .optionalTransform(new Transformation<Bitmap>() {
-                 @NonNull
-                 @Override
-                 public Resource<Bitmap> transform(@NonNull Context context,
-                                                   @NonNull Resource<Bitmap> resource, int outWidth,
-                                                   int outHeight) {
-                     Bitmap bitmap = resource.get();
-                     initTitleBarBackground(bitmap);
-                     return resource;
-                 }
-
-                 @Override
-                 public void updateDiskCacheKey(@NonNull MessageDigest messageDigest) {
-
-                 }
-             })
-             .into(imageView);
+        ImageLoader.TitleBackgroundUpdater titleBackgroundUpdater = new ImageLoader.TitleBackgroundUpdater() {
+            @Override
+            public void setBackgroundColor(int color) {
+                article.setMutedColor(color);
+                articleBodyRecyclerViewAdapter.setMutedColor(color);
+            }
+        };
+        ImageLoader.loadImage(getContext(), article.getPhotoUrl(), imageView,
+                              article.getAspectRatio(), titleBackgroundUpdater);
     }
 
     private void initShareButton(View rootView) {

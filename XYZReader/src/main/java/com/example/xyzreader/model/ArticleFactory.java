@@ -27,6 +27,7 @@ public class ArticleFactory {
         article.setBody(cursor.getString(ArticleLoader.Query.BODY)
                               .replaceAll("(\r\n|\n)", "<br />"));
         article.setPhotoUrl(cursor.getString(ArticleLoader.Query.PHOTO_URL));
+        article.setAspectRatio(cursor.getFloat(ArticleLoader.Query.ASPECT_RATIO));
         return article;
     }
 

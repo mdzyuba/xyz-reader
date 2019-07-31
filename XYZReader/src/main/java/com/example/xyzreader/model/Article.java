@@ -10,6 +10,8 @@ public class Article {
     private String author;
     private String body;
     private String photoUrl;
+    private float aspectRatio;
+    private int mutedColor;
 
     public long getItemId() {
         return itemId;
@@ -57,5 +59,21 @@ public class Article {
 
     public void setPhotoUrl(String photoUrl) {
         this.photoUrl = photoUrl;
+    }
+
+    public float getAspectRatio() {
+        return aspectRatio;
+    }
+
+    public void setAspectRatio(float aspectRatio) {
+        this.aspectRatio = aspectRatio;
+    }
+
+    public int getMutedColor() {
+        return mutedColor;
+    }
+
+    public void setMutedColor(int mutedColor) {
+        this.mutedColor = mutedColor;
     }
 }
