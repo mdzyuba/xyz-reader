@@ -79,6 +79,12 @@ public class ArticleViewFragment extends Fragment {
     }
 
     @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        postponeEnterTransition();
+    }
+
+    @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         Timber.d("onActivityCreated");
@@ -106,6 +112,7 @@ public class ArticleViewFragment extends Fragment {
                          article.getTitle(), article.getBody().substring(0, 20));
                 viewModel.getArticleLiveData().removeObserver(this);
                 articleBodyRecyclerViewAdapter.setArticle(article);
+                startPostponedEnterTransition();
                 loadToolbarImage(article);
             }
         });

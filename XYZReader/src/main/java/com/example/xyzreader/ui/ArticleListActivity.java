@@ -19,6 +19,7 @@ import android.support.v7.widget.StaggeredGridLayoutManager;
 import android.support.v7.widget.Toolbar;
 import android.text.Html;
 import android.text.format.DateUtils;
+import android.transition.Scene;
 import android.transition.Slide;
 import android.view.Gravity;
 import android.view.View;
@@ -148,7 +149,7 @@ public class ArticleListActivity extends AppCompatActivity implements
 
         @Override
         public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View view = getLayoutInflater().inflate(R.layout.list_item_article, parent, false);
+            final View view = getLayoutInflater().inflate(R.layout.list_item_article, parent, false);
             final ViewHolder vh = new ViewHolder(view);
             view.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -158,20 +159,13 @@ public class ArticleListActivity extends AppCompatActivity implements
 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                         ArticleListActivity activity = ArticleListActivity.this;
+                        String transitionName = getResources().getString(R.string.article_photo);
+
                         ActivityOptionsCompat activityOptions =
                                 ActivityOptionsCompat.makeSceneTransitionAnimation(activity,
-                                                                                   vh.thumbnailView,
-                                                                                   vh.thumbnailView.getTransitionName());
-
-                        Slide slide = new Slide(Gravity.BOTTOM);
-                        slide.addTarget(R.id.toolbar_image);
-                        Interpolator interpolator = AnimationUtils
-                                .loadInterpolator(activity, android.R.interpolator.linear_out_slow_in);
-                        slide.setInterpolator(interpolator);
-                        slide.setDuration(2000L);
-                        getWindow().setEnterTransition(slide);
-
-                        ActivityCompat.startActivity(activity, intent, activityOptions.toBundle());
+                                                                                   view,
+                                                                                   transitionName);
+                        startActivity(intent, activityOptions.toBundle());
                     } else {
                         startActivity(intent);
                     }
