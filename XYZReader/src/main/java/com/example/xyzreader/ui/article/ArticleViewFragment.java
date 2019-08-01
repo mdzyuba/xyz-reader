@@ -162,7 +162,6 @@ public class ArticleViewFragment extends Fragment {
         ImageLoader.TitleBackgroundUpdater titleBackgroundUpdater = new ImageLoader.TitleBackgroundUpdater() {
             @Override
             public void setBackgroundColor(int color) {
-                article.setMutedColor(color);
                 articleBodyRecyclerViewAdapter.setMutedColor(color);
             }
         };

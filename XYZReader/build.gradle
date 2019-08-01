@@ -19,19 +19,6 @@ android {
         applicationId "com.example.xyzreader"
     }
 
-    flavorDimensions "version"
-
-    productFlavors {
-        starter {
-            dimension "version"
-            applicationIdSuffix ".starter"
-            versionNameSuffix "-starter"
-        }
-        updated {
-            dimension "version"
-        }
-    }
-
     buildTypes {
         release {
             minifyEnabled false

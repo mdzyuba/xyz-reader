@@ -44,7 +44,7 @@ import timber.log.Timber;
 /**
  * An activity representing a list of Articles. This activity has different presentations for
  * handset and tablet-size devices. On handsets, the activity presents a list of items, which when
- * touched, lead to a {@link ArticleDetailActivity} representing item details. On tablets, the
+ * touched, lead to a {@link ArticleViewActivity} representing item details. On tablets, the
  * activity presents a grid of items as cards.
  */
 public class ArticleListActivity extends AppCompatActivity implements
@@ -68,9 +68,9 @@ public class ArticleListActivity extends AppCompatActivity implements
 
         ActionBarHelper.initActionBar(getSupportActionBar());
 
-        mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.swipe_refresh_layout);
+        mSwipeRefreshLayout = findViewById(R.id.swipe_refresh_layout);
 
-        mRecyclerView = (RecyclerView) findViewById(R.id.recycler_view);
+        mRecyclerView = findViewById(R.id.recycler_view);
 
         // TODO: Replace with a ViewModel
         getSupportLoaderManager().initLoader(0, null, this);
