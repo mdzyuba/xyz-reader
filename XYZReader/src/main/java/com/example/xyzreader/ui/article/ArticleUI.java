@@ -13,7 +13,6 @@ import java.util.GregorianCalendar;
  */
 public class ArticleUI {
     public static final String PARAGRAPH_SEPARATOR = "<br\\s*\\/*><br\\s*\\/*>";
-    public static final String PARAGRAPH_SEPARATOR_OLD = "\\r\\n\\r\\n";
     public static final String LINE_BREAK = "<br\\s*\\/*>";
     // Most time functions can only handle 1902 - 2037
     private GregorianCalendar START_OF_EPOCH = new GregorianCalendar(2, 1, 1);

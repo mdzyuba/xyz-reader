@@ -1,18 +1,15 @@
 <resources>
     <!-- detail -->
-    <dimen name="detail_title_text_size">32sp</dimen>
     <dimen name="detail_body_text_size">16sp</dimen>
     <item name="detail_body_line_spacing_multiplier" format="float" type="fraction">
         1.25
     </item>
     <dimen name="article_title_padding">16dp</dimen>
 
-    <dimen name="list_padding">0dp</dimen>
     <dimen name="list_item_padding">16dp</dimen>
     <dimen name="list_item_image_margin">8dp</dimen>
     <dimen name="thumbnail_height">104dp</dimen>
 
-    <dimen name="card_margin">0dp</dimen>
     <dimen name="card_elevation">4dp</dimen>
     <dimen name="card_padding">0dp</dimen>
     <dimen name="card_side_margin">0dp</dimen>

@@ -6,4 +6,5 @@
     android:layout_height="wrap_content"
     android:layout_marginStart="@dimen/text_margin"
     android:layout_marginEnd="@dimen/text_margin"
-    android:layout_marginBottom="@dimen/list_item_padding"/>
+    android:layout_marginBottom="@dimen/list_item_padding"
+    android:lineSpacingMultiplier="@fraction/detail_body_line_spacing_multiplier"/>

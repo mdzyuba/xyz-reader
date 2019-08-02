@@ -73,10 +73,6 @@ public class ArticleViewModel extends AndroidViewModel {
         return articleParagraphsLiveData;
     }
 
-    public MutableLiveData<String> getPhotoUrlLiveData() {
-        return photoUrlLiveData;
-    }
-
     class ArticleFormatterTask extends AsyncTask<String, Void, List<Spanned> > {
 
         @Override

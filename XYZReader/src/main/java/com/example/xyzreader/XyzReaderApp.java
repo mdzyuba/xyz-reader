@@ -3,9 +3,6 @@ package com.example.xyzreader;
 import android.app.Application;
 import android.support.annotation.NonNull;
 
-import com.android.volley.RequestQueue;
-import com.android.volley.toolbox.Volley;
-
 import java.io.File;
 
 import okhttp3.Cache;
@@ -19,8 +16,6 @@ public class XyzReaderApp extends Application {
     private static final int CACHE_SIZE_BYTES = 512 * 1024 * 1024; // 512 Mb
     private static final String HTTP_CACHE = "http-cache";
 
-    private RequestQueue requestQueue;
-
     @Override
     public void onCreate() {
         super.onCreate();
@@ -33,13 +28,6 @@ public class XyzReaderApp extends Application {
 
     public static XyzReaderApp getInstance() {
         return app;
-    }
-
-    public RequestQueue getRequestQueue() {
-        if (requestQueue == null) {
-            requestQueue = Volley.newRequestQueue(this);
-        }
-        return requestQueue;
     }
 
     @NonNull

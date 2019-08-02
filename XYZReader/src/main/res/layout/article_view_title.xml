@@ -5,7 +5,6 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="@dimen/article_title_padding"
-    android:background="@color/article_title_bar_background"
     android:layout_gravity="bottom"
     android:orientation="vertical"
     tools:showIn="@layout/content_article_view">
