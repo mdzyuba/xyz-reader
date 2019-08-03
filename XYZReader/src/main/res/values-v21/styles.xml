@@ -6,17 +6,7 @@
         <item name="colorAccent">@color/theme_accent</item>
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
-        <item name="android:windowContentTransitions">true</item>
         <item name="android:windowActivityTransitions">true</item>
-        <item name="android:windowSharedElementEnterTransition">
-            @transition/article_view_transition
-        </item>
-        <item name="android:windowSharedElementExitTransition">
-            @transition/article_view_transition
-        </item>
-    </style>
-
-    <style name="Theme.Bacon.Detail" parent="@style/Theme.Bacon">
-        <item name="android:windowEnterTransition">@android:transition/fade</item>
+        <item name="android:windowContentTransitions">true</item>
     </style>
  </resources>

@@ -3,6 +3,7 @@ package com.example.xyzreader.ui.article;
 import android.arch.lifecycle.Observer;
 import android.arch.lifecycle.ViewModelProviders;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.NonNull;
@@ -10,10 +11,13 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
+import android.support.v4.app.SharedElementCallback;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.AppCompatImageView;
 import android.support.v7.widget.Toolbar;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -21,9 +25,13 @@ import com.example.xyzreader.R;
 import com.example.xyzreader.data.ItemsContract;
 import com.example.xyzreader.ui.ActionBarHelper;
 import com.example.xyzreader.ui.ArticleListActivity;
+import com.example.xyzreader.utils.TransitionHelper;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import timber.log.Timber;
 
@@ -59,6 +67,10 @@ public class ArticleViewActivity extends AppCompatActivity implements IActionBar
         }
 
         initArticlePageViewModel();
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            postponeEnterTransition();
+        }
     }
 
     private void initActionBar() {
@@ -73,29 +85,64 @@ public class ArticleViewActivity extends AppCompatActivity implements IActionBar
         pageViewModel = ViewModelProviders.of(this).get(ArticlePageViewModel.class);
         pageViewModel.getItemIdsLiveData().observe(this, new Observer<List<Long>>() {
             @Override
-            public void onChanged(@Nullable List<Long> articleIds) {
+            public void onChanged(@Nullable final List<Long> articleIds) {
                 if (articleIds == null) {
                     myPagerAdapter.setArticleIds(new ArrayList<>());
                     return;
                 }
                 myPagerAdapter.setArticleIds(articleIds);
-                final int index = articleIds.indexOf(startId);
-                Timber.d("startId: %s, index: %s", startId, index);
-                if (index >= 0) {
-                    new Handler().post(new Runnable() {
-                        @Override
-                        public void run() {
-                            int currentItem = viewPager.getCurrentItem();
-                            long articleId = myPagerAdapter.articleIds.get(currentItem);
-                            Timber.d("Current item: %d, article id: %d", currentItem, articleId);
-                            long nextArticleId = myPagerAdapter.articleIds.get(index);
-                            Timber.d("Calling setCurrentItem with index: %d, article id: %d", index, nextArticleId);
-                            viewPager.setCurrentItem(index, false);
-                        }
-                    });
-                }
+
+                long articleId = ArticleViewActivity.this.startId;
+                scrollToArticle(articleIds, articleId);
+
+                SharedElementCallback sharedElementCallback = createSharedElementCallback();
+                setEnterSharedElementCallback(sharedElementCallback);
             }
         });
+    }
+
+    private void scrollToArticle(@NotNull List<Long> articleIds, long articleId) {
+        final int index = articleIds.indexOf(articleId);
+        Timber.d("startId: %s, index: %s", articleId, index);
+        if (index >= 0) {
+            new Handler().post(new Runnable() {
+                @Override
+                public void run() {
+                    int currentItem = viewPager.getCurrentItem();
+                    long articleId = myPagerAdapter.articleIds.get(currentItem);
+                    Timber.d("Current item: %d, article id: %d", currentItem, articleId);
+                    long nextArticleId = myPagerAdapter.articleIds.get(index);
+                    Timber.d("Calling setCurrentItem with index: %d, article id: %d", index, nextArticleId);
+                    viewPager.setCurrentItem(index, false);
+                }
+            });
+        }
+    }
+
+    @NotNull
+    private SharedElementCallback createSharedElementCallback() {
+        return new SharedElementCallback() {
+            @Override
+            public void onMapSharedElements(List<String> names,
+                                            Map<String, View> sharedElements) {
+                int currentItem = viewPager.getCurrentItem();
+                long articleId = myPagerAdapter.articleIds.get(currentItem);
+                ArticleViewFragment fragment = getFragmentAtPosition(currentItem);
+                View fragmentView = fragment.getView();
+                if (fragmentView == null) {
+                    return;
+                }
+                String transitionName = TransitionHelper
+                        .createUniqueTransitionName(getApplicationContext(), articleId);
+                AppCompatImageView value = ArticleViewFragment.getImageView(fragmentView);
+                sharedElements.put(transitionName, value);
+            }
+        };
+    }
+
+    @NotNull
+    private ArticleViewFragment getFragmentAtPosition(int currentItem) {
+        return (ArticleViewFragment) viewPager.getAdapter().instantiateItem(viewPager, currentItem);
     }
 
     private class MyPagerAdapter extends FragmentStatePagerAdapter {
@@ -146,5 +193,15 @@ public class ArticleViewActivity extends AppCompatActivity implements IActionBar
                 navigateUpTo(new Intent(getApplicationContext(), ArticleListActivity.class));
             }
         });
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+        if (id == android.R.id.home) {
+            navigateUpTo(new Intent(getApplicationContext(), ArticleListActivity.class));
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 }

@@ -2,6 +2,7 @@ package com.example.xyzreader.ui;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -9,10 +10,14 @@ import android.support.v7.graphics.Palette;
 import android.support.v7.widget.AppCompatImageView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DataSource;
 import com.bumptech.glide.load.MultiTransformation;
 import com.bumptech.glide.load.Transformation;
+import com.bumptech.glide.load.engine.GlideException;
 import com.bumptech.glide.load.engine.Resource;
+import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.RequestOptions;
+import com.bumptech.glide.request.target.Target;
 import com.example.xyzreader.R;
 import com.example.xyzreader.utils.ResizeAndCropTransformation;
 
@@ -26,7 +31,8 @@ public class ImageLoader {
                                  final String imageUrl,
                                  final AppCompatImageView thumbnail,
                                  final float aspectRatio,
-                                 final TitleBackgroundUpdater titleBackgroundUpdater) {
+                                 final TitleBackgroundUpdater titleBackgroundUpdater,
+                                 final ImageLoadListener imageLoadListener) {
 
         ResizeAndCropTransformation resizeAndCropTransformation =
                 new ResizeAndCropTransformation(aspectRatio);
@@ -60,6 +66,22 @@ public class ImageLoader {
 
         Glide.with(context)
              .load(imageUrl)
+             .listener(new RequestListener<Drawable>() {
+                 @Override
+                 public boolean onLoadFailed(@Nullable GlideException e, Object model,
+                                             Target<Drawable> target, boolean isFirstResource) {
+                     imageLoadListener.onLoadFailed();
+                     return false;
+                 }
+
+                 @Override
+                 public boolean onResourceReady(Drawable resource, Object model,
+                                                Target<Drawable> target, DataSource dataSource,
+                                                boolean isFirstResource) {
+                     imageLoadListener.onLoadComplete();
+                     return false;
+                 }
+             })
              .apply(new RequestOptions().placeholder(R.drawable.image_placeholder))
              .transform(new MultiTransformation(resizeAndCropTransformation,
                                                 bitmapPaletteTransformation))
@@ -85,6 +107,11 @@ public class ImageLoader {
         }
 
         public abstract void setBackgroundColor(int color);
+    }
+
+    public interface ImageLoadListener {
+        void onLoadComplete();
+        void onLoadFailed();
     }
 
 }

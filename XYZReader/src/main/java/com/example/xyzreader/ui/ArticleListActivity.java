@@ -7,9 +7,9 @@ import android.content.IntentFilter;
 import android.database.Cursor;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.ActivityOptionsCompat;
 import android.support.v4.app.LoaderManager;
+import android.support.v4.app.SharedElementCallback;
 import android.support.v4.content.Loader;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
@@ -19,13 +19,10 @@ import android.support.v7.widget.StaggeredGridLayoutManager;
 import android.support.v7.widget.Toolbar;
 import android.text.Html;
 import android.text.format.DateUtils;
-import android.transition.Scene;
-import android.transition.Slide;
-import android.view.Gravity;
+import android.transition.Transition;
+import android.transition.TransitionInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.AnimationUtils;
-import android.view.animation.Interpolator;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -33,31 +30,36 @@ import com.example.xyzreader.R;
 import com.example.xyzreader.data.ArticleLoader;
 import com.example.xyzreader.data.ItemsContract;
 import com.example.xyzreader.data.UpdaterService;
+import com.example.xyzreader.utils.TransitionHelper;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import timber.log.Timber;
 
 /**
  * An activity representing a list of Articles. This activity has different presentations for
  * handset and tablet-size devices. On handsets, the activity presents a list of items, which when
- * touched, lead to a {@link ArticleViewActivity} representing item details. On tablets, the
- * activity presents a grid of items as cards.
+ * touched, lead to a {@link com.example.xyzreader.ui.article.ArticleViewActivity} representing
+ * item details. On tablets, the activity presents a grid of items as cards.
  */
 public class ArticleListActivity extends AppCompatActivity implements
         LoaderManager.LoaderCallbacks<Cursor> {
 
     private SwipeRefreshLayout mSwipeRefreshLayout;
     private RecyclerView mRecyclerView;
+    private AtomicBoolean enterTransitionStarted;
 
     private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.sss");
     // Use default locale format
-    private SimpleDateFormat outputFormat = new SimpleDateFormat();
+    private static final SimpleDateFormat outputFormat = new SimpleDateFormat();
     // Most time functions can only handle 1902 - 2037
-    private GregorianCalendar START_OF_EPOCH = new GregorianCalendar(2,1,1);
+    private static final GregorianCalendar START_OF_EPOCH = new GregorianCalendar(2,1,1);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,6 +79,16 @@ public class ArticleListActivity extends AppCompatActivity implements
 
         if (savedInstanceState == null) {
             refresh();
+        }
+
+        enterTransitionStarted = new AtomicBoolean();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            Context context = ArticleListActivity.this;
+            Transition exitTransition =
+                    TransitionInflater.from(context).inflateTransition(R.transition.grid_exit);
+            getWindow().setExitTransition(exitTransition);
+            // Postponing the enter transitions until the views are loaded.
+            postponeEnterTransition();
         }
     }
 
@@ -151,70 +163,56 @@ public class ArticleListActivity extends AppCompatActivity implements
         public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             final View view = getLayoutInflater().inflate(R.layout.list_item_article, parent, false);
             final ViewHolder vh = new ViewHolder(view);
-            view.setOnClickListener(new View.OnClickListener() {
+            View.OnClickListener clickListener = new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    Intent intent = new Intent(Intent.ACTION_VIEW, ItemsContract.Items
-                            .buildItemUri(getItemId(vh.getAdapterPosition())));
+                    int position = vh.getAdapterPosition();
+                    long articleId = getItemId(position);
+                    Intent intent = new Intent(Intent.ACTION_VIEW,
+                                               ItemsContract.Items.buildItemUri(articleId));
 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                        ArticleListActivity activity = ArticleListActivity.this;
-                        String transitionName = getResources().getString(R.string.article_photo);
 
-                        ActivityOptionsCompat activityOptions =
-                                ActivityOptionsCompat.makeSceneTransitionAnimation(activity,
-                                                                                   view,
-                                                                                   transitionName);
+                        String transitionName = TransitionHelper
+                                .createUniqueTransitionName(getApplicationContext(), articleId);
+                        vh.thumbnailView.setTransitionName(transitionName);
+
+                        getWindow().getExitTransition().excludeTarget(vh.thumbnailView, true);
+
+                        setExitSharedElementCallback(new SharedElementCallback() {
+                            @Override
+                            public void onMapSharedElements(List<String> names,
+                                                            Map<String, View> sharedElements) {
+                                String transitionName = TransitionHelper
+                                        .createUniqueTransitionName(getApplicationContext(), articleId);
+                                AppCompatImageView value = vh.thumbnailView;
+                                sharedElements.put(transitionName, value);
+                            }
+                        });
+
+                        ActivityOptionsCompat activityOptions = ActivityOptionsCompat
+                                .makeSceneTransitionAnimation(ArticleListActivity.this, view,
+                                                              transitionName);
                         startActivity(intent, activityOptions.toBundle());
                     } else {
                         startActivity(intent);
                     }
                 }
-            });
+            };
+            view.setOnClickListener(clickListener);
             return vh;
-        }
-
-        private Date parsePublishedDate() {
-            try {
-                String date = mCursor.getString(ArticleLoader.Query.PUBLISHED_DATE);
-                return dateFormat.parse(date);
-            } catch (ParseException ex) {
-                Timber.e(ex);
-                Timber.i("passing today's date");
-                return new Date();
-            }
         }
 
         @Override
         public void onBindViewHolder(ViewHolder holder, int position) {
             mCursor.moveToPosition(position);
-            holder.titleView.setText(mCursor.getString(ArticleLoader.Query.TITLE));
-            Date publishedDate = parsePublishedDate();
-            if (!publishedDate.before(START_OF_EPOCH.getTime())) {
-                holder.subtitleView.setText(Html.fromHtml(
-                        DateUtils.getRelativeTimeSpanString(
-                                publishedDate.getTime(),
-                                System.currentTimeMillis(), DateUtils.HOUR_IN_MILLIS,
-                                DateUtils.FORMAT_ABBREV_ALL).toString()
-                                + "<br/>" + " by "
-                                + mCursor.getString(ArticleLoader.Query.AUTHOR)));
-            } else {
-                holder.subtitleView.setText(Html.fromHtml(
-                        outputFormat.format(publishedDate)
-                        + "<br/>" + " by "
-                        + mCursor.getString(ArticleLoader.Query.AUTHOR)));
-            }
+            String title = mCursor.getString(ArticleLoader.Query.TITLE);
             String url = mCursor.getString(ArticleLoader.Query.THUMB_URL);
-            Timber.d("image url: %s", url);
+            String author = mCursor.getString(ArticleLoader.Query.AUTHOR);
             float aspectRatio = mCursor.getFloat(ArticleLoader.Query.ASPECT_RATIO);
-            ImageLoader.TitleBackgroundUpdater titleBackgroundUpdater = new ImageLoader.TitleBackgroundUpdater() {
-                @Override
-                public void setBackgroundColor(int color) {
-                    holder.itemHolder.setBackgroundColor(color);
-                }
-            };
-            ImageLoader.loadImage(ArticleListActivity.this, url, holder.thumbnailView,
-                                  aspectRatio, titleBackgroundUpdater);
+            Date publishedDate = parsePublishedDate(mCursor);
+
+            holder.onBind(ArticleListActivity.this, title, url, author, aspectRatio, publishedDate);
         }
 
         @Override
@@ -224,7 +222,7 @@ public class ArticleListActivity extends AppCompatActivity implements
 
     }
 
-    public static class ViewHolder extends RecyclerView.ViewHolder {
+    class ViewHolder extends RecyclerView.ViewHolder {
         LinearLayout itemHolder;
         AppCompatImageView thumbnailView;
         TextView titleView;
@@ -236,6 +234,69 @@ public class ArticleListActivity extends AppCompatActivity implements
             thumbnailView = view.findViewById(R.id.thumbnail);
             titleView = view.findViewById(R.id.article_title);
             subtitleView = view.findViewById(R.id.article_subtitle);
+        }
+
+        void onBind(Context context, String title, String url, String author,
+                    float aspectRatio, Date publishedDate) {
+            titleView.setText(title);
+            if (!publishedDate.before(START_OF_EPOCH.getTime())) {
+                subtitleView.setText(Html.fromHtml(
+                        DateUtils.getRelativeTimeSpanString(
+                                publishedDate.getTime(),
+                                System.currentTimeMillis(), DateUtils.HOUR_IN_MILLIS,
+                                DateUtils.FORMAT_ABBREV_ALL).toString()
+                        + "<br/>" + " by "
+                        + author));
+            } else {
+                subtitleView.setText(Html.fromHtml(
+                        outputFormat.format(publishedDate)
+                        + "<br/>" + " by "
+                        + author));
+            }
+            Timber.d("image url: %s", url);
+
+            ImageLoader.TitleBackgroundUpdater titleBackgroundUpdater = new ImageLoader.TitleBackgroundUpdater() {
+                @Override
+                public void setBackgroundColor(int color) {
+                    itemHolder.setBackgroundColor(color);
+                }
+            };
+
+            ImageLoader.ImageLoadListener loadListener = new ImageLoader.ImageLoadListener() {
+                @Override
+                public void onLoadComplete() {
+                    resumePostponedEnterTransition();
+                }
+
+                @Override
+                public void onLoadFailed() {
+                    resumePostponedEnterTransition();
+                }
+            };
+
+            ImageLoader.loadImage(context, url, thumbnailView,
+                                  aspectRatio, titleBackgroundUpdater, loadListener);
+        }
+    }
+
+    void resumePostponedEnterTransition() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            // TODO: add a check for the selected position
+            if (enterTransitionStarted.getAndSet(true)) {
+                return;
+            }
+            ArticleListActivity.this.startPostponedEnterTransition();
+        }
+    }
+
+    private Date parsePublishedDate(Cursor cursor) {
+        try {
+            String date = cursor.getString(ArticleLoader.Query.PUBLISHED_DATE);
+            return dateFormat.parse(date);
+        } catch (ParseException ex) {
+            Timber.e(ex);
+            Timber.i("passing today's date");
+            return new Date();
         }
     }
 }

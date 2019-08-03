@@ -3,6 +3,7 @@ package com.example.xyzreader.ui.article;
 import android.arch.lifecycle.Observer;
 import android.arch.lifecycle.ViewModelProviders;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.support.annotation.NonNull;
@@ -18,6 +19,8 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.text.Spanned;
+import android.transition.Transition;
+import android.transition.TransitionInflater;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,6 +31,7 @@ import com.example.xyzreader.R;
 import com.example.xyzreader.model.Article;
 import com.example.xyzreader.ui.ActionBarHelper;
 import com.example.xyzreader.ui.ImageLoader;
+import com.example.xyzreader.utils.TransitionHelper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -75,13 +79,8 @@ public class ArticleViewFragment extends Fragment {
         recyclerView.getRecycledViewPool().setMaxRecycledViews(R.layout.paragraph, 10);
         recyclerView.setAdapter(articleBodyRecyclerViewAdapter);
         initShareButton(rootView);
+        initTransition();
         return rootView;
-    }
-
-    @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
-        postponeEnterTransition();
     }
 
     @Override
@@ -112,7 +111,6 @@ public class ArticleViewFragment extends Fragment {
                          article.getTitle(), article.getBody().substring(0, 20));
                 viewModel.getArticleLiveData().removeObserver(this);
                 articleBodyRecyclerViewAdapter.setArticle(article);
-                startPostponedEnterTransition();
                 loadToolbarImage(article);
             }
         });
@@ -154,19 +152,47 @@ public class ArticleViewFragment extends Fragment {
             }
         }
 
-        AppCompatImageView imageView = view.findViewById(R.id.toolbar_image);
+        AppCompatImageView imageView = getImageView(view);
+
         if (imageView == null) {
             Timber.e("loadToolbarImage: The image is not found");
             return;
         }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            String transitionName =
+                    TransitionHelper.createUniqueTransitionName(getContext(), article.getItemId());
+            imageView.setTransitionName(transitionName);
+        }
+
         ImageLoader.TitleBackgroundUpdater titleBackgroundUpdater = new ImageLoader.TitleBackgroundUpdater() {
             @Override
             public void setBackgroundColor(int color) {
                 articleBodyRecyclerViewAdapter.setMutedColor(color);
             }
         };
+        ImageLoader.ImageLoadListener imageLoadListener = new ImageLoader.ImageLoadListener() {
+            @Override
+            public void onLoadComplete() {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    getActivity().startPostponedEnterTransition();
+                }
+            }
+
+            @Override
+            public void onLoadFailed() {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    getActivity().startPostponedEnterTransition();
+                }
+            }
+        };
+
         ImageLoader.loadImage(getContext(), article.getPhotoUrl(), imageView,
-                              article.getAspectRatio(), titleBackgroundUpdater);
+                              article.getAspectRatio(), titleBackgroundUpdater, imageLoadListener);
+    }
+
+    public static AppCompatImageView getImageView(View view) {
+        return view.findViewById(R.id.toolbar_image);
     }
 
     private void initShareButton(View rootView) {
@@ -188,6 +214,12 @@ public class ArticleViewFragment extends Fragment {
         fab.setOnClickListener(shareButtonOnClickListener);
     }
 
+    private void initTransition() {
+        Transition transition = TransitionInflater.from(getContext())
+                .inflateTransition(R.transition.article_view_transition);
+        setSharedElementEnterTransition(transition);
+        setSharedElementReturnTransition(transition);
+    }
 
     static class ArticleBodyRecyclerViewAdapter extends RecyclerView.Adapter<ArticleBodyRecyclerViewAdapter.ParagraphViewHolder> {
         private Article article;
