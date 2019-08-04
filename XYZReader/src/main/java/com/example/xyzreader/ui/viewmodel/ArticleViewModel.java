@@ -1,19 +1,20 @@
-package com.example.xyzreader.ui.article;
+package com.example.xyzreader.ui.viewmodel;
 
 import android.app.Application;
-import android.arch.lifecycle.AndroidViewModel;
-import android.arch.lifecycle.MutableLiveData;
+import androidx.lifecycle.AndroidViewModel;
+import androidx.lifecycle.MutableLiveData;
 import android.database.Cursor;
 import android.os.AsyncTask;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v4.content.Loader;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.loader.content.Loader;
 import android.text.Html;
 import android.text.Spanned;
 
 import com.example.xyzreader.data.ArticleLoader;
 import com.example.xyzreader.model.Article;
 import com.example.xyzreader.model.ArticleFactory;
+import com.example.xyzreader.ui.article.ArticleUI;
 
 import java.util.ArrayList;
 import java.util.List;

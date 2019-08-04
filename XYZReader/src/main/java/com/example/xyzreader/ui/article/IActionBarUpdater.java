@@ -1,6 +1,6 @@
 package com.example.xyzreader.ui.article;
 
-import android.support.v7.widget.Toolbar;
+import androidx.appcompat.widget.Toolbar;
 
 public interface IActionBarUpdater {
     void updateActionBar(Toolbar toolbar);

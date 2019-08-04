@@ -1,12 +1,12 @@
 package com.example.xyzreader.ui.article;
 
 import android.app.Application;
-import android.arch.lifecycle.AndroidViewModel;
-import android.arch.lifecycle.MutableLiveData;
+import androidx.lifecycle.AndroidViewModel;
+import androidx.lifecycle.MutableLiveData;
 import android.database.Cursor;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v4.content.Loader;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.loader.content.Loader;
 
 import com.example.xyzreader.data.ArticleLoader;
 
@@ -15,7 +15,7 @@ import java.util.List;
 
 public class ArticlePageViewModel extends AndroidViewModel {
 
-    private MutableLiveData<List<Long>> itemIdsLiveData;
+    private final MutableLiveData<List<Long>> itemIdsLiveData;
 
     public ArticlePageViewModel(@NonNull Application application) {
         super(application);

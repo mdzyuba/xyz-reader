@@ -2,7 +2,7 @@ package com.example.xyzreader.data;
 
 import android.content.Context;
 import android.net.Uri;
-import android.support.v4.content.CursorLoader;
+import androidx.loader.content.CursorLoader;
 
 /**
  * Helper for loading a list of articles or a single article.

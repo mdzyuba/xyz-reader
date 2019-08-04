@@ -1,6 +1,6 @@
 package com.example.xyzreader.ui;
 
-import android.support.v7.app.ActionBar;
+import androidx.appcompat.app.ActionBar;
 
 import com.example.xyzreader.R;
 

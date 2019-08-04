@@ -1,16 +1,15 @@
 package com.example.xyzreader;
 
-import android.app.Application;
-import android.support.annotation.NonNull;
-
 import java.io.File;
 
+import androidx.annotation.NonNull;
+import androidx.multidex.MultiDexApplication;
 import okhttp3.Cache;
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 import timber.log.Timber;
 
-public class XyzReaderApp extends Application {
+public class XyzReaderApp extends MultiDexApplication {
     private static XyzReaderApp app;
     private volatile OkHttpClient okHttpClient;
     private static final int CACHE_SIZE_BYTES = 512 * 1024 * 1024; // 512 Mb
