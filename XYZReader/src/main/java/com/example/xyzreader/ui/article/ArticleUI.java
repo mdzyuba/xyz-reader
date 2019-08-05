@@ -15,10 +15,10 @@ public class ArticleUI {
     public static final String PARAGRAPH_SEPARATOR = "<br\\s*\\/*><br\\s*\\/*>";
     public static final String LINE_BREAK = "<br\\s*\\/*>";
     // Most time functions can only handle 1902 - 2037
-    private GregorianCalendar START_OF_EPOCH = new GregorianCalendar(2, 1, 1);
+    private final GregorianCalendar START_OF_EPOCH = new GregorianCalendar(2, 1, 1);
 
     // Use default locale format
-    private SimpleDateFormat outputFormat;
+    private final SimpleDateFormat outputFormat;
 
     public ArticleUI() {
         outputFormat = new SimpleDateFormat();
@@ -27,11 +27,11 @@ public class ArticleUI {
     public Spanned formatDateAndAuthor(String author, Date publishedDate) {
         Spanned text;
         String date = formatDate(publishedDate);
-        text = Html.fromHtml(date + " by <font color='#ffffff'>" + author + "</font>");
+        text = Html.fromHtml(date + "<br/>by <font color='#ffffff'>" + author + "</font>");
         return text;
     }
 
-    public String formatDate(Date publishedDate) {
+    private String formatDate(Date publishedDate) {
         String date;
         if (!publishedDate.before(START_OF_EPOCH.getTime())) {
             date = DateUtils

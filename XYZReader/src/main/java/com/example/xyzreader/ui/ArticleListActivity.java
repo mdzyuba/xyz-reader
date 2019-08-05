@@ -4,21 +4,9 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.database.Cursor;
 import android.os.Build;
 import android.os.Bundle;
-import androidx.core.app.ActivityOptionsCompat;
-import androidx.loader.app.LoaderManager;
-import androidx.core.app.SharedElementCallback;
-import androidx.loader.content.Loader;
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.AppCompatImageView;
-import androidx.recyclerview.widget.RecyclerView;
-import androidx.recyclerview.widget.StaggeredGridLayoutManager;
-import androidx.appcompat.widget.Toolbar;
-import android.text.Html;
-import android.text.format.DateUtils;
+import android.text.Spanned;
 import android.transition.Transition;
 import android.transition.TransitionInflater;
 import android.view.View;
@@ -27,19 +15,30 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.example.xyzreader.R;
-import com.example.xyzreader.data.ArticleLoader;
 import com.example.xyzreader.data.ItemsContract;
 import com.example.xyzreader.data.UpdaterService;
+import com.example.xyzreader.model.Article;
+import com.example.xyzreader.ui.article.ArticleUI;
+import com.example.xyzreader.ui.viewmodel.ArticleListViewModel;
 import com.example.xyzreader.utils.TransitionHelper;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.GregorianCalendar;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.AppCompatImageView;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.app.ActivityOptionsCompat;
+import androidx.core.app.SharedElementCallback;
+import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProviders;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.StaggeredGridLayoutManager;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import timber.log.Timber;
 
 /**
@@ -48,18 +47,15 @@ import timber.log.Timber;
  * touched, lead to a {@link com.example.xyzreader.ui.article.ArticleViewActivity} representing
  * item details. On tablets, the activity presents a grid of items as cards.
  */
-public class ArticleListActivity extends AppCompatActivity implements
-        LoaderManager.LoaderCallbacks<Cursor> {
+public class ArticleListActivity extends AppCompatActivity {
 
     private SwipeRefreshLayout mSwipeRefreshLayout;
     private RecyclerView mRecyclerView;
     private AtomicBoolean enterTransitionStarted;
 
-    private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.sss");
-    // Use default locale format
-    private static final SimpleDateFormat outputFormat = new SimpleDateFormat();
-    // Most time functions can only handle 1902 - 2037
-    private static final GregorianCalendar START_OF_EPOCH = new GregorianCalendar(2,1,1);
+    private ArticleListViewModel articleListViewModel;
+    private Adapter adapter;
+    private boolean mIsRefreshing = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,17 +64,29 @@ public class ArticleListActivity extends AppCompatActivity implements
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        ActionBarHelper.initActionBar(getSupportActionBar());
+        if (getSupportActionBar() != null) {
+            ActionBarHelper.initActionBar(getSupportActionBar());
+        }
 
         mSwipeRefreshLayout = findViewById(R.id.swipe_refresh_layout);
         mRecyclerView = findViewById(R.id.recycler_view);
 
-        // TODO: Replace with a ViewModel
-        getSupportLoaderManager().initLoader(0, null, this);
+        adapter = new Adapter();
+        adapter.setHasStableIds(true);
+        mRecyclerView.setAdapter(adapter);
+        int columnCount = getResources().getInteger(R.integer.list_column_count);
+        StaggeredGridLayoutManager sglm =
+                new StaggeredGridLayoutManager(columnCount, StaggeredGridLayoutManager.VERTICAL);
+        mRecyclerView.setLayoutManager(sglm);
 
-        if (savedInstanceState == null) {
-            refresh();
-        }
+        articleListViewModel = ViewModelProviders.of(this).get(ArticleListViewModel.class);
+
+        articleListViewModel.getArticlesLiveData().observe(this, new Observer<List<Article>>() {
+            @Override
+            public void onChanged(List<Article> articles) {
+                adapter.setArticles(articles);
+            }
+        });
 
         enterTransitionStarted = new AtomicBoolean();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -89,6 +97,13 @@ public class ArticleListActivity extends AppCompatActivity implements
             // Postponing the enter transitions until the views are loaded.
             postponeEnterTransition();
         }
+
+        mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                refresh();
+            }
+        });
     }
 
     private void refresh() {
@@ -108,9 +123,7 @@ public class ArticleListActivity extends AppCompatActivity implements
         unregisterReceiver(mRefreshingReceiver);
     }
 
-    private boolean mIsRefreshing = false;
-
-    private BroadcastReceiver mRefreshingReceiver = new BroadcastReceiver() {
+    private final BroadcastReceiver mRefreshingReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (UpdaterService.BROADCAST_ACTION_STATE_CHANGE.equals(intent.getAction())) {
@@ -121,45 +134,30 @@ public class ArticleListActivity extends AppCompatActivity implements
     };
 
     private void updateRefreshingUI() {
+        Timber.d("update UI");
         mSwipeRefreshLayout.setRefreshing(mIsRefreshing);
     }
 
-    @Override
-    public Loader<Cursor> onCreateLoader(int i, Bundle bundle) {
-        return ArticleLoader.newAllArticlesInstance(this);
-    }
-
-    @Override
-    public void onLoadFinished(Loader<Cursor> cursorLoader, Cursor cursor) {
-        Adapter adapter = new Adapter(cursor);
-        adapter.setHasStableIds(true);
-        mRecyclerView.setAdapter(adapter);
-        int columnCount = getResources().getInteger(R.integer.list_column_count);
-        StaggeredGridLayoutManager sglm =
-                new StaggeredGridLayoutManager(columnCount, StaggeredGridLayoutManager.VERTICAL);
-        mRecyclerView.setLayoutManager(sglm);
-    }
-
-    @Override
-    public void onLoaderReset(Loader<Cursor> loader) {
-        mRecyclerView.setAdapter(null);
-    }
-
     private class Adapter extends RecyclerView.Adapter<ViewHolder> {
-        private Cursor mCursor;
+        List<Article> articles;
 
-        Adapter(Cursor cursor) {
-            mCursor = cursor;
+        Adapter() {
+            articles = new ArrayList<>();
+        }
+
+        void setArticles(List<Article> articles) {
+            this.articles = articles;
+            notifyDataSetChanged();
         }
 
         @Override
         public long getItemId(int position) {
-            mCursor.moveToPosition(position);
-            return mCursor.getLong(ArticleLoader.Query._ID);
+            return articles.get(position).getItemId();
         }
 
+        @NotNull
         @Override
-        public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        public ViewHolder onCreateViewHolder(@NotNull ViewGroup parent, int viewType) {
             final View view = getLayoutInflater().inflate(R.layout.list_item_article, parent, false);
             final ViewHolder vh = new ViewHolder(view);
             View.OnClickListener clickListener = new View.OnClickListener() {
@@ -203,29 +201,22 @@ public class ArticleListActivity extends AppCompatActivity implements
         }
 
         @Override
-        public void onBindViewHolder(ViewHolder holder, int position) {
-            mCursor.moveToPosition(position);
-            String title = mCursor.getString(ArticleLoader.Query.TITLE);
-            String url = mCursor.getString(ArticleLoader.Query.THUMB_URL);
-            String author = mCursor.getString(ArticleLoader.Query.AUTHOR);
-            float aspectRatio = mCursor.getFloat(ArticleLoader.Query.ASPECT_RATIO);
-            Date publishedDate = parsePublishedDate(mCursor);
-
-            holder.onBind(ArticleListActivity.this, title, url, author, aspectRatio, publishedDate);
+        public void onBindViewHolder(@NotNull ViewHolder holder, int position) {
+            holder.onBind(ArticleListActivity.this, articles.get(position));
         }
 
         @Override
         public int getItemCount() {
-            return mCursor.getCount();
+            return articles.size();
         }
 
     }
 
     class ViewHolder extends RecyclerView.ViewHolder {
-        LinearLayout itemHolder;
-        AppCompatImageView thumbnailView;
-        TextView titleView;
-        TextView subtitleView;
+        final LinearLayout itemHolder;
+        final AppCompatImageView thumbnailView;
+        final TextView titleView;
+        final TextView subtitleView;
 
         ViewHolder(View view) {
             super(view);
@@ -235,24 +226,12 @@ public class ArticleListActivity extends AppCompatActivity implements
             subtitleView = view.findViewById(R.id.article_subtitle);
         }
 
-        void onBind(Context context, String title, String url, String author,
-                    float aspectRatio, Date publishedDate) {
-            titleView.setText(title);
-            if (!publishedDate.before(START_OF_EPOCH.getTime())) {
-                subtitleView.setText(Html.fromHtml(
-                        DateUtils.getRelativeTimeSpanString(
-                                publishedDate.getTime(),
-                                System.currentTimeMillis(), DateUtils.HOUR_IN_MILLIS,
-                                DateUtils.FORMAT_ABBREV_ALL).toString()
-                        + "<br/>" + " by "
-                        + author));
-            } else {
-                subtitleView.setText(Html.fromHtml(
-                        outputFormat.format(publishedDate)
-                        + "<br/>" + " by "
-                        + author));
-            }
-            Timber.d("image url: %s", url);
+        void onBind(Context context, Article article) {
+            titleView.setText(article.getTitle());
+            Spanned text = new ArticleUI().formatDateAndAuthor(article.getAuthor(),
+                                                               article.getPublishedDate());
+            subtitleView.setText(text);
+            Timber.d("image url: %s", article.getPhotoUrl());
 
             ImageLoader.TitleBackgroundUpdater titleBackgroundUpdater = new ImageLoader.TitleBackgroundUpdater() {
                 @Override
@@ -273,12 +252,12 @@ public class ArticleListActivity extends AppCompatActivity implements
                 }
             };
 
-            ImageLoader.loadImage(context, url, thumbnailView,
-                                  aspectRatio, titleBackgroundUpdater, loadListener);
+            ImageLoader.loadImage(context, article.getPhotoUrl(), thumbnailView,
+                                  article.getAspectRatio(), titleBackgroundUpdater, loadListener);
         }
     }
 
-    void resumePostponedEnterTransition() {
+    private void resumePostponedEnterTransition() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             // TODO: add a check for the selected position
             if (enterTransitionStarted.getAndSet(true)) {
@@ -288,14 +267,4 @@ public class ArticleListActivity extends AppCompatActivity implements
         }
     }
 
-    private Date parsePublishedDate(Cursor cursor) {
-        try {
-            String date = cursor.getString(ArticleLoader.Query.PUBLISHED_DATE);
-            return dateFormat.parse(date);
-        } catch (ParseException ex) {
-            Timber.e(ex);
-            Timber.i("passing today's date");
-            return new Date();
-        }
-    }
 }
