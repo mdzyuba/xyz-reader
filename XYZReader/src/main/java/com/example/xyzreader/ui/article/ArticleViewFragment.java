@@ -56,7 +56,7 @@ public class ArticleViewFragment extends Fragment {
 
     // In a landscape mode, the fragment will perform an instructive motion - it will scroll
     // the view up to show the article title and text. These are the animation constants.
-    private static final int SCROLL_UP_DURATION = 1000; // ms
+    private static final int SCROLL_UP_DURATION = 500; // ms
     private static final int START_DELAY = 300; // ms
     // Scroll up by 2/3 of the screen height.
     private static final float SCROLL_OFFSET_RATIO = 2f / 3f;
