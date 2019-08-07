@@ -1,29 +1,17 @@
 package com.example.xyzreader.ui.article;
 
-import androidx.lifecycle.Observer;
-import androidx.lifecycle.ViewModelProviders;
+import android.animation.ValueAnimator;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.SystemClock;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentActivity;
-import androidx.core.app.ShareCompat;
-import androidx.appcompat.app.ActionBar;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.AppCompatImageView;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-import androidx.appcompat.widget.Toolbar;
 import android.text.Spanned;
 import android.transition.Transition;
 import android.transition.TransitionInflater;
+import android.util.DisplayMetrics;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.DecelerateInterpolator;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -33,17 +21,45 @@ import com.example.xyzreader.ui.ActionBarHelper;
 import com.example.xyzreader.ui.ImageLoader;
 import com.example.xyzreader.ui.viewmodel.ArticleViewModel;
 import com.example.xyzreader.utils.TransitionHelper;
+import com.google.android.material.appbar.AppBarLayout;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.AppCompatImageView;
+import androidx.appcompat.widget.Toolbar;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
+import androidx.core.app.ShareCompat;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
+import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProviders;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import timber.log.Timber;
 
+/**
+ * This fragment presents an article body.
+ */
 public class ArticleViewFragment extends Fragment {
 
+    // An ID of the article to be displayed in this fragment.
     private long startId;
+
     private ArticleViewModel viewModel;
     private ArticleBodyRecyclerViewAdapter articleBodyRecyclerViewAdapter;
+
+    // In a landscape mode, the fragment will perform an instructive motion - it will scroll
+    // the view up to show the article title and text. These are the animation constants.
+    private static final int SCROLL_UP_DURATION = 1000; // ms
+    private static final int START_DELAY = 300; // ms
+    // Scroll up by 2/3 of the screen height.
+    private static final float SCROLL_OFFSET_RATIO = 2f / 3f;
 
     public ArticleViewFragment() {
     }
@@ -170,6 +186,17 @@ public class ArticleViewFragment extends Fragment {
             public void onLoadComplete() {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                     getActivity().startPostponedEnterTransition();
+
+                    // If the device is in a landscape orientation, the image might take the whole
+                    // screen. In this case, perform a view scroll up to display the article title
+                    // and text.
+                    DisplayMetrics displayMetrics = new DisplayMetrics();
+                    getActivity().getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+                    final int height = displayMetrics.heightPixels;
+                    final int width = displayMetrics.widthPixels;
+                    if (ArticleViewFragment.this.isVisible() && height < width) {
+                        performScrollUpInstructiveMotion((int) (height * SCROLL_OFFSET_RATIO));
+                    }
                 }
             }
 
@@ -183,6 +210,31 @@ public class ArticleViewFragment extends Fragment {
 
         ImageLoader.loadImage(getContext(), article.getPhotoUrl(), imageView,
                               article.getAspectRatio(), titleBackgroundUpdater, imageLoadListener);
+    }
+
+    private void performScrollUpInstructiveMotion(int verticalOffset) {
+        Timber.d("delta: %d", verticalOffset);
+        final AppBarLayout appBarLayout = getView().findViewById(R.id.app_bar);
+        CoordinatorLayout.LayoutParams params =
+                (CoordinatorLayout.LayoutParams) appBarLayout.getLayoutParams();
+        final AppBarLayout.Behavior behavior = (AppBarLayout.Behavior) params.getBehavior();
+        if (behavior != null) {
+            ValueAnimator valueAnimator = ValueAnimator.ofInt();
+            valueAnimator.setInterpolator(new DecelerateInterpolator());
+            valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                @Override
+                public void onAnimationUpdate(ValueAnimator animation) {
+                    behavior.setTopAndBottomOffset((Integer) animation.getAnimatedValue());
+                    appBarLayout.requestLayout();
+                }
+            });
+            valueAnimator.setIntValues(0, -1 * verticalOffset);
+            valueAnimator.setStartDelay(START_DELAY);
+            valueAnimator.setDuration(SCROLL_UP_DURATION);
+            valueAnimator.start();
+        } else {
+            Timber.d("The behavior is null");
+        }
     }
 
     private void initActionBar(View view) {
@@ -260,15 +312,12 @@ public class ArticleViewFragment extends Fragment {
         @NonNull
         @Override
         public ParagraphViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            long t1 = SystemClock.elapsedRealtime();
             LayoutInflater layoutInflater = LayoutInflater.from(parent.getContext());
             final boolean shouldAttachToParentImmediately = false;
             View view = layoutInflater.inflate(viewType, parent, shouldAttachToParentImmediately);
 
             if (viewType == R.layout.paragraph) {
                 ParagraphViewHolder paragraphViewHolder = new ParagraphViewHolder(view);
-                long t2 = SystemClock.elapsedRealtime();
-                Timber.d("time to create a view holder: %d ms", (t2 - t1));
                 return paragraphViewHolder;
             } else if (viewType == R.layout.article_view_title) {
                 TitleViewHolder titleViewHolder = new TitleViewHolder(view);
@@ -287,7 +336,6 @@ public class ArticleViewFragment extends Fragment {
         @Override
         public int getItemCount() {
             int size = paragraphs.size();
-            Timber.d("size: %d", size);
             return size;
         }
 

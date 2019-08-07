@@ -66,6 +66,9 @@ public class ImageLoader {
 
         Glide.with(context)
              .load(imageUrl)
+             .transform(new MultiTransformation(resizeAndCropTransformation,
+                                                bitmapPaletteTransformation))
+             .apply(new RequestOptions().placeholder(R.drawable.image_placeholder))
              .listener(new RequestListener<Drawable>() {
                  @Override
                  public boolean onLoadFailed(@Nullable GlideException e, Object model,
@@ -82,9 +85,6 @@ public class ImageLoader {
                      return false;
                  }
              })
-             .apply(new RequestOptions().placeholder(R.drawable.image_placeholder))
-             .transform(new MultiTransformation(resizeAndCropTransformation,
-                                                bitmapPaletteTransformation))
              .into(thumbnail);
     }
 

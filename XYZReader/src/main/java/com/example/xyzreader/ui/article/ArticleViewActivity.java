@@ -35,6 +35,10 @@ import java.util.Map;
 
 import timber.log.Timber;
 
+/**
+ * This activity displays an article specified with the START_ID parameter.
+ * It displays a ViewPager that contains ArticleViewFragments for each article.
+ */
 public class ArticleViewActivity extends AppCompatActivity implements IActionBarUpdater {
 
     public static final String START_ID = "startId";
