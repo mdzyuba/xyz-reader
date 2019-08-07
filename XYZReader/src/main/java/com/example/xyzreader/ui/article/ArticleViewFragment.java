@@ -72,13 +72,7 @@ public class ArticleViewFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_article_view, container, false);
 
-        RecyclerView recyclerView = rootView.findViewById(R.id.article_body);
-        LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
-        layoutManager.setInitialPrefetchItemCount(10);
-        recyclerView.setLayoutManager(layoutManager);
-        recyclerView.setHasFixedSize(true);
-        recyclerView.getRecycledViewPool().setMaxRecycledViews(R.layout.paragraph, 10);
-        recyclerView.setAdapter(articleBodyRecyclerViewAdapter);
+        initRecyclerView(rootView);
         initShareButton(rootView);
         initTransition();
         return rootView;
@@ -99,9 +93,19 @@ public class ArticleViewFragment extends Fragment {
         initViewModel(startId);
     }
 
+    private void initRecyclerView(View rootView) {
+        RecyclerView recyclerView = rootView.findViewById(R.id.article_body);
+        LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
+        layoutManager.setInitialPrefetchItemCount(10);
+        recyclerView.setLayoutManager(layoutManager);
+        recyclerView.setHasFixedSize(true);
+        recyclerView.getRecycledViewPool().setMaxRecycledViews(R.layout.paragraph, 10);
+        recyclerView.setAdapter(articleBodyRecyclerViewAdapter);
+    }
+
     private void initViewModel(long startId) {
         viewModel = ViewModelProviders.of(this).get(ArticleViewModel.class);
-        viewModel.getArticleLiveData().observe(getViewLifecycleOwner(), new Observer<Article>() {
+        Observer<Article> articleObserver = new Observer<Article>() {
             @Override
             public void onChanged(@Nullable Article article) {
                 if (article == null) {
@@ -114,18 +118,20 @@ public class ArticleViewFragment extends Fragment {
                 articleBodyRecyclerViewAdapter.setArticle(article);
                 loadToolbarImage(article);
             }
-        });
+        };
+        viewModel.getArticleLiveData().observe(getViewLifecycleOwner(), articleObserver);
+        Observer<List<Spanned>> articleBodyObserver = new Observer<List<Spanned>>() {
+            @Override
+            public void onChanged(@Nullable List<Spanned> paragraphs) {
+                if (paragraphs == null) {
+                    return;
+                }
+                Timber.d("%d - setParagraphs: %d", startId, paragraphs.size());
+                articleBodyRecyclerViewAdapter.setParagraphs(paragraphs);
+            }
+        };
         viewModel.getArticleParagraphsLiveData()
-                 .observe(getViewLifecycleOwner(), new Observer<List<Spanned>>() {
-                     @Override
-                     public void onChanged(@Nullable List<Spanned> paragraphs) {
-                         if (paragraphs == null) {
-                             return;
-                         }
-                         Timber.d("%d - setParagraphs: %d", startId, paragraphs.size());
-                         articleBodyRecyclerViewAdapter.setParagraphs(paragraphs);
-                     }
-                 });
+                 .observe(getViewLifecycleOwner(), articleBodyObserver);
         viewModel.loadArticle(startId);
     }
 
@@ -137,21 +143,7 @@ public class ArticleViewFragment extends Fragment {
             return;
         }
 
-        Toolbar toolbar = view.findViewById(R.id.toolbar);
-        toolbar.setLogo(R.drawable.logo);
-
-        if (getActivity() instanceof IActionBarUpdater) {
-            ((IActionBarUpdater) getActivity()).updateActionBar(toolbar);
-        }
-
-        AppCompatActivity appCompatActivity = (AppCompatActivity) getActivity();
-        if (appCompatActivity != null) {
-            ActionBar actionBar = appCompatActivity.getSupportActionBar();
-            if (actionBar != null) {
-                ActionBarHelper.initActionBar(actionBar);
-                actionBar.setDisplayHomeAsUpEnabled(true);
-            }
-        }
+        initActionBar(view);
 
         AppCompatImageView imageView = getImageView(view);
 
@@ -172,6 +164,7 @@ public class ArticleViewFragment extends Fragment {
                 articleBodyRecyclerViewAdapter.setMutedColor(color);
             }
         };
+
         ImageLoader.ImageLoadListener imageLoadListener = new ImageLoader.ImageLoadListener() {
             @Override
             public void onLoadComplete() {
@@ -190,6 +183,24 @@ public class ArticleViewFragment extends Fragment {
 
         ImageLoader.loadImage(getContext(), article.getPhotoUrl(), imageView,
                               article.getAspectRatio(), titleBackgroundUpdater, imageLoadListener);
+    }
+
+    private void initActionBar(View view) {
+        Toolbar toolbar = view.findViewById(R.id.toolbar);
+        toolbar.setLogo(R.drawable.logo);
+
+        if (getActivity() instanceof IActionBarUpdater) {
+            ((IActionBarUpdater) getActivity()).updateActionBar(toolbar);
+        }
+
+        AppCompatActivity appCompatActivity = (AppCompatActivity) getActivity();
+        if (appCompatActivity != null) {
+            ActionBar actionBar = appCompatActivity.getSupportActionBar();
+            if (actionBar != null) {
+                ActionBarHelper.initActionBar(actionBar);
+                actionBar.setDisplayHomeAsUpEnabled(true);
+            }
+        }
     }
 
     public static AppCompatImageView getImageView(View view) {
@@ -325,7 +336,7 @@ public class ArticleViewFragment extends Fragment {
                 }
             }
 
-            public void setMutedColor(int mutedColor) {
+            void setMutedColor(int mutedColor) {
                 this.mutedColor = mutedColor;
             }
 

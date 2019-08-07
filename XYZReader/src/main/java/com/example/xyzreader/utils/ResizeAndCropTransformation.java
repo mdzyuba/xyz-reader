@@ -9,6 +9,8 @@ import com.bumptech.glide.load.resource.bitmap.BitmapTransformation;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
 
+import timber.log.Timber;
+
 public class ResizeAndCropTransformation extends BitmapTransformation {
     private static final String ID = ResizeAndCropTransformation.class.getSimpleName();
     private static final byte[] ID_BYTES = ID.getBytes(Charset.forName("UTF-8"));
@@ -46,6 +48,7 @@ public class ResizeAndCropTransformation extends BitmapTransformation {
             dy = (scaledBitmap.getHeight() - height) / 2;
         }
         if ((dy + height) <= scaledBitmap.getHeight()) {
+            Timber.d("transform: dy: %d, outWidth: %d, height: %d", dy, outWidth, height);
             Bitmap croppedBitmap = Bitmap.createBitmap(scaledBitmap, 0, dy, outWidth, height);
             return croppedBitmap;
         }

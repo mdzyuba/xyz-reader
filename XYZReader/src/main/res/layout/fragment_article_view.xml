@@ -10,6 +10,7 @@
 
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/app_bar"
+        android:theme="@style/Theme.Bacon.AppBarOverlay"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:fitsSystemWindows="true">
@@ -38,7 +39,6 @@
                 android:layout_height="?attr/actionBarSize"
                 app:layout_collapseMode="pin"
                 app:elevation="@dimen/app_bar_elevation"
-                android:theme="@style/Theme.Bacon.AppBarOverlay"
                 app:popupTheme="@style/Theme.Bacon.PopupOverlay" />
 
         </com.google.android.material.appbar.CollapsingToolbarLayout>
