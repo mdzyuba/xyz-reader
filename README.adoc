@@ -1,3 +1,5 @@
+:imagesdir: ./doc/images
+
 = XYZ Reader
 
 The XYZ Reader is an Android application created as part of
@@ -14,3 +16,16 @@ The main goals of this project are:
 - Apply Material Design guidelines to a mobile application.
 - Separate an interface into surfaces.
 - Effectively use transitions and motion.
+
+== Screenshots
+
+The application provides a list of articles. Once the article is selected,
+the application displays the article. The navigation between the screens
+is performed with transitions.
+
+|===
+| image::list.png[List of Articles,200] | | image::detail.png[Article, 200]
+|===
+
+
+
