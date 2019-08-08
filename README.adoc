@@ -24,7 +24,7 @@ the application displays the article. The navigation between the screens
 is performed with transitions.
 
 |===
-| image::list.png[List of Articles,200] | | image::detail.png[Article, 200]
+a| image::list.png[List of Articles,200] | a| image::detail.png[Article, 200]
 |===
 
 
