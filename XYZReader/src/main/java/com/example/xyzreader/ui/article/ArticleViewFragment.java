@@ -1,5 +1,8 @@
 package com.example.xyzreader.ui.article;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.content.Intent;
 import android.os.Build;
@@ -60,6 +63,8 @@ public class ArticleViewFragment extends Fragment {
     private static final int START_DELAY = 300; // ms
     // Scroll up by 2/3 of the screen height.
     private static final float SCROLL_OFFSET_RATIO = 2f / 3f;
+    private static final int TITLE_FADE_IN_DURATION = 300;
+    private static final int TEXT_FADE_IN_DURATION = 300;
 
     public ArticleViewFragment() {
     }
@@ -373,6 +378,16 @@ public class ArticleViewFragment extends Fragment {
             void bind(int position) {
                 if (position > 0) {
                     Spanned paragraph = paragraphs.get(position);
+                    ObjectAnimator alphaAnimator = ObjectAnimator
+                            .ofFloat(paragraphTextView, View.ALPHA, 0.0f, 1.0f);
+                    alphaAnimator.addListener(new AnimatorListenerAdapter() {
+                        @Override
+                        public void onAnimationStart(Animator animation) {
+                            paragraphTextView.setText(paragraph);
+                        }
+                    });
+                    alphaAnimator.setDuration(TEXT_FADE_IN_DURATION);
+                    alphaAnimator.start();
                     paragraphTextView.setText(paragraph);
                 }
             }
@@ -408,8 +423,17 @@ public class ArticleViewFragment extends Fragment {
                 byline.setText(text);
 
                 Integer titleBackground = article.getTitleBackground();
-                if (titleBackground != null) {
-                    metaBar.setBackgroundColor(titleBackground);
+                if (titleBackground != null && metaBar.getAlpha() < 1.0f) {
+                    ObjectAnimator alphaAnimator = ObjectAnimator
+                            .ofFloat(metaBar, View.ALPHA, 0.0f, 1.0f);
+                    alphaAnimator.addListener(new AnimatorListenerAdapter() {
+                        @Override
+                        public void onAnimationStart(Animator animation) {
+                            metaBar.setBackgroundColor(titleBackground);
+                        }
+                    });
+                    alphaAnimator.setDuration(TITLE_FADE_IN_DURATION);
+                    alphaAnimator.start();
                 }
             }
 
