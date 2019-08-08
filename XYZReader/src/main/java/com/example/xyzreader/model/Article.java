@@ -11,6 +11,7 @@ public class Article {
     private String body;
     private String photoUrl;
     private float aspectRatio;
+    private Integer titleBackground;
 
     public long getItemId() {
         return itemId;
@@ -68,10 +69,19 @@ public class Article {
         this.aspectRatio = aspectRatio;
     }
 
+    public Integer getTitleBackground() {
+        return titleBackground;
+    }
+
+    public void setTitleBackground(int titleBackground) {
+        this.titleBackground = titleBackground;
+    }
+
     @Override
     public String toString() {
         return "Article{" + "itemId=" + itemId + ", publishedDate=" + publishedDate + ", title='" +
                title + '\'' + ", author='" + author + '\'' + ", body='" + body.substring(1, 20) + '\'' +
                ", photoUrl='" + photoUrl + '\'' + ", aspectRatio=" + aspectRatio + '}';
     }
+
 }

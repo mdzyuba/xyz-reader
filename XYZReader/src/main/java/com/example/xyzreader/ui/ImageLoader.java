@@ -2,27 +2,21 @@ package com.example.xyzreader.ui;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
-import android.os.AsyncTask;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.palette.graphics.Palette;
-import androidx.appcompat.widget.AppCompatImageView;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.DataSource;
-import com.bumptech.glide.load.MultiTransformation;
-import com.bumptech.glide.load.Transformation;
 import com.bumptech.glide.load.engine.GlideException;
-import com.bumptech.glide.load.engine.Resource;
 import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.RequestOptions;
 import com.bumptech.glide.request.target.Target;
 import com.example.xyzreader.R;
 import com.example.xyzreader.utils.ResizeAndCropTransformation;
 
-import java.security.MessageDigest;
-
+import androidx.annotation.Nullable;
+import androidx.appcompat.widget.AppCompatImageView;
+import androidx.palette.graphics.Palette;
 import timber.log.Timber;
 
 public class ImageLoader {
@@ -37,38 +31,8 @@ public class ImageLoader {
         ResizeAndCropTransformation resizeAndCropTransformation =
                 new ResizeAndCropTransformation(aspectRatio);
 
-        Transformation<Bitmap> bitmapPaletteTransformation = new Transformation<Bitmap>() {
-            @NonNull
-            @Override
-            public Resource<Bitmap> transform(@NonNull Context context,
-                                              @NonNull Resource<Bitmap> resource,
-                                              int outWidth,
-                                              int outHeight) {
-                final Bitmap bitmap = Bitmap.createBitmap(resource.get());
-                new AsyncTask<Void, Void, Void>() {
-                    @Override
-                    protected Void doInBackground(Void... voids) {
-                        if (titleBackgroundUpdater != null) {
-                            titleBackgroundUpdater.updateCardBackground(bitmap);
-                        }
-                        Timber.d("outWidth: %d, outHeight: %d", outWidth, outHeight);
-                        return null;
-                    }
-                }.execute();
-                return resource;
-            }
-
-            @Override
-            public void updateDiskCacheKey(@NonNull MessageDigest messageDigest) {
-
-            }
-        };
-
         Glide.with(context)
              .load(imageUrl)
-             .transform(new MultiTransformation(resizeAndCropTransformation,
-                                                bitmapPaletteTransformation))
-             .apply(new RequestOptions().placeholder(R.drawable.image_placeholder))
              .listener(new RequestListener<Drawable>() {
                  @Override
                  public boolean onLoadFailed(@Nullable GlideException e, Object model,
@@ -81,31 +45,19 @@ public class ImageLoader {
                  public boolean onResourceReady(Drawable resource, Object model,
                                                 Target<Drawable> target, DataSource dataSource,
                                                 boolean isFirstResource) {
+                     if (resource instanceof BitmapDrawable) {
+                         updateArticleTitleBackground(context, (BitmapDrawable) resource, titleBackgroundUpdater);
+                     }
                      imageLoadListener.onLoadComplete();
                      return false;
                  }
              })
+             .apply(new RequestOptions().placeholder(R.drawable.image_placeholder))
+             .transform(resizeAndCropTransformation)
              .into(thumbnail);
     }
 
     public static abstract class TitleBackgroundUpdater {
-        private int mutedColor = 0xFF333333;
-
-        void updateCardBackground(Bitmap bitmap) {
-            Palette.from(bitmap).maximumColorCount(12).generate(new Palette.PaletteAsyncListener() {
-                @Override
-                public void onGenerated(@Nullable Palette palette) {
-                    if (palette == null) {
-                        Timber.e("The palette is null");
-                        return;
-                    }
-                    mutedColor = palette.getDarkMutedColor(0xFF333333);
-                    setBackgroundColor(mutedColor);
-                    Timber.d("mutedColor: %d", mutedColor);
-                }
-            });
-        }
-
         public abstract void setBackgroundColor(int color);
     }
 
@@ -114,4 +66,25 @@ public class ImageLoader {
         void onLoadFailed();
     }
 
+    private static void updateArticleTitleBackground(final Context context,
+                                                     BitmapDrawable bitmapDrawable,
+                                                     final TitleBackgroundUpdater titleBackgroundUpdater) {
+        if (bitmapDrawable.getBitmap() != null) {
+            Bitmap bitmap = bitmapDrawable.getBitmap();
+            Palette.from(bitmap).maximumColorCount(12)
+                   .generate(new Palette.PaletteAsyncListener() {
+                       @Override
+                       public void onGenerated(@Nullable Palette palette) {
+                           if (palette == null) {
+                               Timber.e("The palette is null");
+                               return;
+                           }
+                           int mutedColor = context.getResources()
+                                                   .getColor(R.color.muted_color);
+                           mutedColor = palette.getDarkMutedColor(mutedColor);
+                           titleBackgroundUpdater.setBackgroundColor(mutedColor);
+                       }
+                   });
+        }
+    }
 }

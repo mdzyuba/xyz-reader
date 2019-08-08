@@ -6,27 +6,25 @@ import android.graphics.Matrix;
 import com.bumptech.glide.load.engine.bitmap_recycle.BitmapPool;
 import com.bumptech.glide.load.resource.bitmap.BitmapTransformation;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
-
-import timber.log.Timber;
 
 public class ResizeAndCropTransformation extends BitmapTransformation {
     private static final String ID = ResizeAndCropTransformation.class.getSimpleName();
     private static final byte[] ID_BYTES = ID.getBytes(Charset.forName("UTF-8"));
-    private float aspectRatio;
-
-    public ResizeAndCropTransformation() {
-        this.aspectRatio = -1f;
-    }
+    private static final float THRESHOLD = 0.1f;
+    private final float aspectRatio;
 
     public ResizeAndCropTransformation(float aspectRatio) {
         this.aspectRatio = aspectRatio;
     }
 
     @Override
-    public Bitmap transform(BitmapPool pool, Bitmap toTransform, int outWidth, int outHeight) {
-        if (toTransform.getWidth() == outWidth && toTransform.getHeight() == outHeight) {
+    public Bitmap transform(@NotNull BitmapPool pool, @NotNull Bitmap toTransform, int outWidth, int outHeight) {
+        if (toTransform.getWidth() == outWidth && toTransform.getHeight() == outHeight &&
+            isRequiredAspectRatio(outWidth, outHeight)) {
             return toTransform;
         }
         float scale = (float) outWidth / (float) toTransform.getWidth();
@@ -48,11 +46,15 @@ public class ResizeAndCropTransformation extends BitmapTransformation {
             dy = (scaledBitmap.getHeight() - height) / 2;
         }
         if ((dy + height) <= scaledBitmap.getHeight()) {
-            Timber.d("transform: dy: %d, outWidth: %d, height: %d", dy, outWidth, height);
             Bitmap croppedBitmap = Bitmap.createBitmap(scaledBitmap, 0, dy, outWidth, height);
             return croppedBitmap;
         }
         return scaledBitmap;
+    }
+
+    private boolean isRequiredAspectRatio(int outWidth, int outHeight) {
+        float aspectRatioOut = (float) outWidth / (float) outHeight;
+        return Math.abs(aspectRatioOut - aspectRatio) < THRESHOLD;
     }
 
     @Override
@@ -69,7 +71,7 @@ public class ResizeAndCropTransformation extends BitmapTransformation {
     }
 
     @Override
-    public void updateDiskCacheKey(MessageDigest messageDigest) {
+    public void updateDiskCacheKey(@NotNull MessageDigest messageDigest) {
         messageDigest.update(ID_BYTES);
     }
 }

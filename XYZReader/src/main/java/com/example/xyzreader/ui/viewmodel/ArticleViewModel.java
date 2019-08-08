@@ -45,15 +45,8 @@ public class ArticleViewModel extends AndroidViewModel {
             public void onLoadComplete(@NonNull Loader<Cursor> loader, @Nullable Cursor cursor) {
                 if (cursor != null) {
                     if (cursor.moveToFirst() && !cursor.isAfterLast()) {
-                        Article article = new ArticleFactory().createArticle(cursor);
-                        photoUrlLiveData.postValue(article.getPhotoUrl());
-                        articleLiveData.postValue(article);
-                        Timber.d("Article is loaded: %d, %s", article.getItemId(),
-                                 article.getTitle());
-                        new ArticleFormatterTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,
-                                                                     article.getBody());
+                        new ArticleBuilderTask().execute(cursor);
                     }
-                    cursor.close();
                 }
             }
         });
@@ -72,6 +65,26 @@ public class ArticleViewModel extends AndroidViewModel {
 
     public MutableLiveData<List<Spanned>> getArticleParagraphsLiveData() {
         return articleParagraphsLiveData;
+    }
+
+    class ArticleBuilderTask extends AsyncTask<Cursor, Void, Article> {
+        @Override
+        protected Article doInBackground(Cursor... cursors) {
+            Cursor cursor = cursors[0];
+            Article article = new ArticleFactory().createArticle(cursor);
+            cursor.close();
+            return article;
+        }
+
+        @Override
+        protected void onPostExecute(Article article) {
+            photoUrlLiveData.postValue(article.getPhotoUrl());
+            articleLiveData.postValue(article);
+            Timber.d("Article is loaded: %d, %s", article.getItemId(),
+                     article.getTitle());
+            new ArticleFormatterTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,
+                                                         article.getBody());
+        }
     }
 
     class ArticleFormatterTask extends AsyncTask<String, Void, List<Spanned> > {

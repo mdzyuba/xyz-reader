@@ -1,5 +1,6 @@
 package com.example.xyzreader.ui;
 
+import android.annotation.TargetApi;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -160,7 +161,14 @@ public class ArticleListActivity extends AppCompatActivity {
         public ViewHolder onCreateViewHolder(@NotNull ViewGroup parent, int viewType) {
             final View view = getLayoutInflater().inflate(R.layout.list_item_article, parent, false);
             final ViewHolder vh = new ViewHolder(view);
-            View.OnClickListener clickListener = new View.OnClickListener() {
+            View.OnClickListener clickListener = createArticleClickListener(vh);
+            view.setOnClickListener(clickListener);
+            return vh;
+        }
+
+        @NotNull
+        private View.OnClickListener createArticleClickListener(ViewHolder vh) {
+            return new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
                     int position = vh.getAdapterPosition();
@@ -169,40 +177,44 @@ public class ArticleListActivity extends AppCompatActivity {
                                                ItemsContract.Items.buildItemUri(articleId));
 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-
-                        String transitionName = TransitionHelper
-                                .createUniqueTransitionName(getApplicationContext(), articleId);
-                        vh.thumbnailView.setTransitionName(transitionName);
-
-                        getWindow().getExitTransition().excludeTarget(vh.thumbnailView, true);
-
-                        setExitSharedElementCallback(new SharedElementCallback() {
-                            @Override
-                            public void onMapSharedElements(List<String> names,
-                                                            Map<String, View> sharedElements) {
-                                String transitionName = TransitionHelper
-                                        .createUniqueTransitionName(getApplicationContext(), articleId);
-                                AppCompatImageView value = vh.thumbnailView;
-                                sharedElements.put(transitionName, value);
-                            }
-                        });
-
-                        ActivityOptionsCompat activityOptions = ActivityOptionsCompat
-                                .makeSceneTransitionAnimation(ArticleListActivity.this, view,
-                                                              transitionName);
-                        startActivity(intent, activityOptions.toBundle());
+                        startArticleViewActivityWithTransition(view, articleId, intent, vh);
                     } else {
                         startActivity(intent);
                     }
                 }
             };
-            view.setOnClickListener(clickListener);
-            return vh;
+        }
+
+        @TargetApi(21)
+        private void startArticleViewActivityWithTransition(View view, long articleId,
+                                                            Intent intent, ViewHolder vh) {
+            String transitionName = TransitionHelper
+                    .createUniqueTransitionName(getApplicationContext(), articleId);
+            vh.thumbnailView.setTransitionName(transitionName);
+
+            getWindow().getExitTransition().excludeTarget(vh.thumbnailView, true);
+
+            setExitSharedElementCallback(new SharedElementCallback() {
+                @Override
+                public void onMapSharedElements(List<String> names,
+                                                Map<String, View> sharedElements) {
+                    String transitionName = TransitionHelper
+                            .createUniqueTransitionName(getApplicationContext(), articleId);
+                    AppCompatImageView value = vh.thumbnailView;
+                    sharedElements.put(transitionName, value);
+                }
+            });
+
+            ActivityOptionsCompat activityOptions = ActivityOptionsCompat
+                    .makeSceneTransitionAnimation(ArticleListActivity.this, view,
+                                                  transitionName);
+            startActivity(intent, activityOptions.toBundle());
         }
 
         @Override
         public void onBindViewHolder(@NotNull ViewHolder holder, int position) {
-            holder.onBind(ArticleListActivity.this, articles.get(position));
+            Article article = articles.get(position);
+            holder.onBind(ArticleListActivity.this, article);
         }
 
         @Override
@@ -233,9 +245,14 @@ public class ArticleListActivity extends AppCompatActivity {
             subtitleView.setText(text);
             Timber.d("image url: %s", article.getPhotoUrl());
 
+            if (article.getTitleBackground() != null) {
+                itemHolder.setBackgroundColor(article.getTitleBackground());
+            }
+
             ImageLoader.TitleBackgroundUpdater titleBackgroundUpdater = new ImageLoader.TitleBackgroundUpdater() {
                 @Override
                 public void setBackgroundColor(int color) {
+                    article.setTitleBackground(color);
                     itemHolder.setBackgroundColor(color);
                 }
             };

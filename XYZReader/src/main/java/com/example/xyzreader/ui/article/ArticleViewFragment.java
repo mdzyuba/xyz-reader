@@ -168,7 +168,7 @@ public class ArticleViewFragment extends Fragment {
             return;
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && getContext() != null) {
             String transitionName =
                     TransitionHelper.createUniqueTransitionName(getContext(), article.getItemId());
             imageView.setTransitionName(transitionName);
@@ -177,21 +177,25 @@ public class ArticleViewFragment extends Fragment {
         ImageLoader.TitleBackgroundUpdater titleBackgroundUpdater = new ImageLoader.TitleBackgroundUpdater() {
             @Override
             public void setBackgroundColor(int color) {
-                articleBodyRecyclerViewAdapter.setMutedColor(color);
+                article.setTitleBackground(color);
+                // The title is in the position 0.
+                articleBodyRecyclerViewAdapter.notifyItemChanged(0);
             }
         };
 
         ImageLoader.ImageLoadListener imageLoadListener = new ImageLoader.ImageLoadListener() {
+            private final FragmentActivity activity = getActivity();
+
             @Override
             public void onLoadComplete() {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    getActivity().startPostponedEnterTransition();
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && activity != null) {
+                    activity.startPostponedEnterTransition();
 
                     // If the device is in a landscape orientation, the image might take the whole
                     // screen. In this case, perform a view scroll up to display the article title
                     // and text.
                     DisplayMetrics displayMetrics = new DisplayMetrics();
-                    getActivity().getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+                    activity.getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
                     final int height = displayMetrics.heightPixels;
                     final int width = displayMetrics.widthPixels;
                     if (ArticleViewFragment.this.isVisible() && height < width) {
@@ -202,8 +206,8 @@ public class ArticleViewFragment extends Fragment {
 
             @Override
             public void onLoadFailed() {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    getActivity().startPostponedEnterTransition();
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && activity != null) {
+                    activity.startPostponedEnterTransition();
                 }
             }
         };
@@ -214,7 +218,11 @@ public class ArticleViewFragment extends Fragment {
 
     private void performScrollUpInstructiveMotion(int verticalOffset) {
         Timber.d("delta: %d", verticalOffset);
-        final AppBarLayout appBarLayout = getView().findViewById(R.id.app_bar);
+        View view = getView();
+        if (view == null) {
+            return;
+        }
+        final AppBarLayout appBarLayout = view.findViewById(R.id.app_bar);
         CoordinatorLayout.LayoutParams params =
                 (CoordinatorLayout.LayoutParams) appBarLayout.getLayoutParams();
         final AppBarLayout.Behavior behavior = (AppBarLayout.Behavior) params.getBehavior();
@@ -285,10 +293,9 @@ public class ArticleViewFragment extends Fragment {
         setSharedElementReturnTransition(transition);
     }
 
-    static class ArticleBodyRecyclerViewAdapter extends RecyclerView.Adapter<ArticleBodyRecyclerViewAdapter.ParagraphViewHolder> {
+    static class ArticleBodyRecyclerViewAdapter extends RecyclerView.Adapter<ArticleBodyRecyclerViewAdapter.ArticleItemViewHolder> {
         private Article article;
         private List<Spanned> paragraphs;
-        private int mutedColor = 0xFF333333;
 
         ArticleBodyRecyclerViewAdapter() {
             paragraphs = new ArrayList<>();
@@ -304,14 +311,9 @@ public class ArticleViewFragment extends Fragment {
             notifyDataSetChanged();
         }
 
-        void setMutedColor(int mutedColor) {
-            this.mutedColor = mutedColor;
-            notifyDataSetChanged();
-        }
-
         @NonNull
         @Override
-        public ParagraphViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        public ArticleItemViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
             LayoutInflater layoutInflater = LayoutInflater.from(parent.getContext());
             final boolean shouldAttachToParentImmediately = false;
             View view = layoutInflater.inflate(viewType, parent, shouldAttachToParentImmediately);
@@ -321,16 +323,15 @@ public class ArticleViewFragment extends Fragment {
                 return paragraphViewHolder;
             } else if (viewType == R.layout.article_view_title) {
                 TitleViewHolder titleViewHolder = new TitleViewHolder(view);
-                titleViewHolder.setMutedColor(mutedColor);
                 return titleViewHolder;
             }
             return new ParagraphViewHolder(view);
         }
 
         @Override
-        public void onBindViewHolder(@NonNull ParagraphViewHolder paragraphViewHolder, int position) {
-            paragraphViewHolder.bind(position);
-            paragraphViewHolder.setTag(paragraphViewHolder);
+        public void onBindViewHolder(@NonNull ArticleItemViewHolder articleItemViewHolder, int position) {
+            articleItemViewHolder.bind(position);
+            articleItemViewHolder.setTag(articleItemViewHolder);
         }
 
         @Override
@@ -347,7 +348,18 @@ public class ArticleViewFragment extends Fragment {
             return R.layout.paragraph;
         }
 
-        class ParagraphViewHolder extends RecyclerView.ViewHolder {
+        abstract class ArticleItemViewHolder extends RecyclerView.ViewHolder {
+
+            ArticleItemViewHolder(@NonNull View itemView) {
+                super(itemView);
+            }
+
+            abstract void bind(int position);
+
+            abstract void setTag(ArticleItemViewHolder viewHolder);
+        }
+
+        class ParagraphViewHolder extends ArticleItemViewHolder {
             TextView paragraphTextView;
 
             ParagraphViewHolder(@NonNull View itemView) {
@@ -357,6 +369,7 @@ public class ArticleViewFragment extends Fragment {
                 }
             }
 
+            @Override
             void bind(int position) {
                 if (position > 0) {
                     Spanned paragraph = paragraphs.get(position);
@@ -364,16 +377,16 @@ public class ArticleViewFragment extends Fragment {
                 }
             }
 
-            void setTag(ParagraphViewHolder viewHolder) {
+            @Override
+            void setTag(ArticleItemViewHolder viewHolder) {
                 this.paragraphTextView.setTag(viewHolder);
             }
         }
 
-        class TitleViewHolder extends ParagraphViewHolder {
+        class TitleViewHolder extends ArticleItemViewHolder {
             LinearLayout metaBar;
             TextView title;
             TextView byline;
-            int mutedColor = 0xFF333333;
 
             TitleViewHolder(@NonNull View itemView) {
                 super(itemView);
@@ -384,25 +397,24 @@ public class ArticleViewFragment extends Fragment {
                 }
             }
 
-            void setMutedColor(int mutedColor) {
-                this.mutedColor = mutedColor;
-            }
-
             @Override
             void bind(int position) {
                 if (position > 0) {
-                    super.bind(position);
                     return;
                 }
                 title.setText(article.getTitle());
                 Spanned text = new ArticleUI().formatDateAndAuthor(article.getAuthor(),
                                                                    article.getPublishedDate());
                 byline.setText(text);
-                metaBar.setBackgroundColor(mutedColor);
+
+                Integer titleBackground = article.getTitleBackground();
+                if (titleBackground != null) {
+                    metaBar.setBackgroundColor(titleBackground);
+                }
             }
 
             @Override
-            void setTag(ParagraphViewHolder viewHolder) {
+            void setTag(ArticleItemViewHolder viewHolder) {
                 metaBar.setTag(viewHolder);
             }
         }

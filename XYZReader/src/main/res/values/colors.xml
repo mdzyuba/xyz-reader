@@ -25,4 +25,5 @@
     <color name="article_title_bar_background">@android:color/white</color>
     <color name="action_title_bar_textColor">@android:color/white</color>
     <color name="image_placeholder">#fff</color>
+    <color name="muted_color">#FF333333</color>
 </resources>
